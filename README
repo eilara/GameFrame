@@ -1,3 +1,18 @@
-
 experiments in Perl + SDL + Coro 2D game programming
+
+requires:
+
+aliased
+Moose
+Coro
+SDL
+Set::Object
+List::MoreUtils
+MooseX::Role::Listenable
+MooseX::Role::BuildInstanceOf
+EV
+SDLx::Controller::Coro
+
+
+
 
