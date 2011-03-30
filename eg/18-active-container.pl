@@ -1,0 +1,88 @@
+#!/usr/bin/perl
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
+
+# how to clean Active children from Containers after they are deactivated
+# and how to get various notifications from the container
+# a wave will start, then each time a child is deactivated a notification
+# will show, as well as when all children are deactivated
+
+package GameFrame::eg::ActiveContainerChild;
+use Moose;
+
+with qw(
+    GameFrame::Role::Sprite
+    GameFrame::Role::Movable
+    GameFrame::Role::Active::Child
+);
+
+sub start {
+    my $self = shift;
+    $self->move(to => sub { [0, 0] });
+    $self->hide;
+}
+
+sub DEMOLISH { print "DEMOLISH ON $_[0]\n" }
+
+# ------------------------------------------------------------------------------
+
+package GameFrame::eg::ActiveContainerWave;
+use Moose;
+use GameFrame::Time qw(interval);
+
+has last_message => (is => 'rw', default => 'all children active');
+
+with qw(
+    GameFrame::Role::Paintable
+    GameFrame::Role::Active
+    GameFrame::Role::Container::Simple
+    GameFrame::Role::Active::Container
+);
+
+sub start {
+    my $self = shift;
+    interval
+        times => 4,
+        sleep => 1,
+        step  => sub { $self->create_next_child };
+}
+
+sub on_child_deactivate {
+    my ($self, $child) = @_;
+    $self->last_message("deactivated child idx: ". $child->idx);
+}
+
+sub on_all_children_deactivated
+    { shift->last_message("all children deactivated") }
+
+sub paint {
+    my ($self, $surface) = @_;
+    $surface->draw_gfx_text([400, 100], 0xFFFFFFFF, $self->last_message);
+}
+
+# ------------------------------------------------------------------------------
+
+package main;
+use strict;
+use warnings;
+use FindBin qw($Bin);
+use aliased 'GameFrame::App';
+
+my $app = App->new(
+    title    => 'Active Container',
+    bg_color => 0x0,
+);
+
+my $wave = GameFrame::eg::ActiveContainerWave->new(
+    child_args  => {
+        child_class => 'GameFrame::eg::ActiveContainerChild',
+        xy          => [600, 400],
+        v           => 300,
+        image       => 'arrow',
+    },
+);
+
+$app->run;
+
+
+
