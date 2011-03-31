@@ -26,6 +26,7 @@ sub start {
         for my $collision (@$collisions) {
             my ($missile, $circle) = @$collision;
             $_->deactivate for $missile, $circle;
+            $self->player->add_to_score(1);
             async {
                 $_->color(0xFF0000FF) for $circle, $missile;
                 rest 0.1;
@@ -61,6 +62,7 @@ use Moose;
 use GameFrame::Time qw(animate);
 
 has player => (is => 'ro', required => 1, weak_ref => 1);
+has v      => (is => 'ro', required => 1); # velocity of expansion
 has radius => (is => 'rw', default  => 1); # start small, then grow
 has color  => (is => 'rw', default  => 0xFFFFFFFF);
 
@@ -78,7 +80,7 @@ sub start {
     animate
         type  => [linear => 1, $max, $max],
         on    => [radius => $self],
-        sleep => 1/20;
+        sleep => 1 / $self->v;
     # now hit player with 10 HP
     $self->player->hit(10);
 }
@@ -105,8 +107,11 @@ sub start {
     my $self = shift;
     my $i = 0;
     interval
-        sleep => sub { max(0.3, 1 - $i++ / 50) },
+        sleep => sub { max(0.3, 1 - $i / 50) },
         step  => sub {
+            # select increasing velocity
+            my $v = max(60, 20 + $i);
+
             # select a starting point for the circle from one of the
             # four screen edges
             my ($w, $h) = (640, 480);
@@ -115,7 +120,8 @@ sub start {
             my ($x, $y) = $y_point < 0?
                 ($x_point % $w, $x_point < $w? 0: $h):
                 ($y_point < $h? 0: $w, $y_point % $h);
-            $self->create_next_child(xy => [$x, $y]);
+            $self->create_next_child(xy => [$x, $y], v => $v);
+            $i++;
         };
 }
 
@@ -163,12 +169,14 @@ sub w { 25 }
 has last_hit_time => (is => 'rw', default => -1);
 
 with 'GameFrame::Role::Point';
+
 with qw(
     GameFrame::Role::SDLEventHandler
     GameFrame::Role::Figure
     GameFrame::Role::Container::Simple
     GameFrame::Role::Active::Container
     GameFrame::Role::HealthBar
+    GameFrame::Role::Scoreable
     GameFrame::Role::Movable
 );
 
@@ -197,8 +205,8 @@ sub on_mouse_motion {
 # fire!
 sub on_mouse_button_up {
     my $self = shift;
-    # cant fire more than 5 missiles at once
-    return if $self->child_count >= 5;
+    # cant fire more than 4 missiles at once
+    return if $self->child_count >= 4;
     $self->create_next_child(
         xy    => $self->translate_point_by_distance(25),
         to    => $self->translate_point_by_distance(300), # range of missile
