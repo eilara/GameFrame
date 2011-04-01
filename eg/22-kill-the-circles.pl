@@ -107,10 +107,10 @@ sub start {
     my $self = shift;
     my $i = 0;
     interval
-        sleep => sub { max(0.3, 1 - $i / 50) },
+        sleep => sub { max(0.2, 1 - $i / 40) },
         step  => sub {
             # select increasing velocity
-            my $v = max(60, 20 + $i);
+            my $v = max(70, 20 + $i / 2);
 
             # select a starting point for the circle from one of the
             # four screen edges
@@ -236,16 +236,19 @@ my $app = App->new(
     bg_color => 0x0,
 );
 
+# the player is the circle killer, its children are missiles
 my $player = GameFrame::eg::CircleKiller->new(
     xy                => [320, 200],
-    start_hp          => 100,
+    start_hp          => 50,
     health_bar_offset => [-13, -25],
+    v                 => 100, # velocity when dropping to death
     child_args        => {
         child_class => 'GameFrame::eg::CircleKillMissile',
         v           => 100,
     },
 );
 
+# spawns evil circles
 my $spawner = GameFrame::eg::CircleSpawner->new(
     child_args  => {
         child_class => 'GameFrame::eg::EvilCircle',
@@ -253,6 +256,7 @@ my $spawner = GameFrame::eg::CircleSpawner->new(
     },
 );
 
+# detects missle <-> circle collisions and updates score
 my $detector = GameFrame::eg::CircleMissileCollisionDetector->new(
    spawner => $spawner,
    player  => $player,
