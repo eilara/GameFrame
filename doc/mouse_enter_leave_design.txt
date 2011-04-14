@@ -1,0 +1,121 @@
+
+mouse enter leave mechanism
+===========================
+
+
+why?
+----
+
+these features need mouse leave / enter event:
+
+- tooltips
+- mouse hover animations
+- button mouse press mechanics
+
+SDL has only mouse motion event
+
+GameFrame already has event routing using BoxRouter, so you can get the 
+mouse motion even only in the rectangular event sink which owns the event,
+and nowhere else
+
+now we need to add mouse leave/enter event
+
+
+requirements
+------------
+
+a rectangular event sink should be able to override on_mouse_enter/leave
+and get them called on the correct events
+
+app lose focus is also a mouse leave event
+
+
+design
+------
+
+
+* new role
+
+rectangular event sink is event sink which is rectangular and adds two
+events: mouse enter/leave, similar to event sink role
+
+
+* the situation today
+
+in a typical scene graph, a window will contain box router, will
+contain box router, etc. eventually containing a button or some
+other rectangular event sink
+
+mouse motion event flows down a single path in the tree according
+to box router find child at
+
+
+* the requirement focused
+
+this hierarchy needs to determine from mouse move events received by
+the window, which rectangular event sink needs a mouse enter/leave event
+
+every object gets the event on its path from window to rectangular event
+sink at the bottom of the tree, except the window at the top
+
+
+* how
+
+1) add to BoxRouter:
+
+has active_mouse_sink => (rw, rectangular event sink, default undef, weakref)
+
+3) box router mouse motion:
+
+$child = find child at mouse coordinates
+$active = $self->active_mouse_sink
+
+if !$active || ($active != $child)
+    $active->on_mouse_leave if $active
+    $self->active_mouse_sink($child)
+    $child->on_mouse_enter
+
+
+4) box router on mouse leave:
+
+$active = $self->active_mouse_sink
+$active->on_mouse_leave
+$self->active_mouse_sink(undef)
+
+5) do something similar for app focus out event
+    
+
+testing
+-------
+
+Window -+- Button1
+        |
+        +- BoxRouter1 -+- Button2
+                       |
+                       +- BoxRouter2 -+- Button3
+
++ Example 1
+
+event: mouse motion on Button1
+state: no active sink
+
+1) Window gets mouse motion, sees it is for Button1 and that window has no
+   active mouse sink
+
+2) Window sets active mouse sink = Button1
+   and calls Button1->on_mouse_enter
+
+
+* Example 2
+
+event: mouse motion on Button1
+state: Button3 active
+
+1) mouse leave trickles down from window to BoxRouter1 to BoxRouter2
+   to Button3
+
+2) window calls Button1 enter
+
+
+
+
