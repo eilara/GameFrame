@@ -1,6 +1,6 @@
 package GameFrame::Role::Sprite;
 
-# a role for a visual object which has a birmap sprite
+# a role for a visual object which has a bitmap sprite
 
 use Moose::Role;
 use MooseX::Types::Moose qw(Num Str);

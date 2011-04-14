@@ -25,6 +25,9 @@ with qw(
     GameFrame::Role::Sprite
 );
 
+# hide/show this cursor when entering/leaving app
+sub on_app_mouse_focus { shift->is_visible(pop) }
+
 sub on_mouse_motion {
     my ($self, $x, $y) = @_;
     $self->x($x);

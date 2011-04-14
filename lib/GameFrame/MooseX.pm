@@ -15,6 +15,10 @@ sub _compute_prefix($) {
     return lc $1;
 }
 
+# syntax sugar over MooseX::Role::BuildInstanceOf:
+# 1) exports keyword instead of verbose "with 'MooseX::Role::Bui..."
+# 2) adds inject feature which saves you (often) from writing the
+#    around sub on merge args
 sub compose_from {
     my ($meta, $target, %args) = @_;
     my $prefix = delete($args{prefix}) || _compute_prefix $target;
@@ -37,6 +41,15 @@ sub compose_from {
                 $meta->add_around_method_modifier("merge_${prefix}_args", sub {
                     my ($orig, $self) = @_;
                     return ($self->$orig, map { $_ => $self->$_ } @$inject);
+                });
+
+            } elsif ($ref eq 'HASH') {
+                $meta->add_around_method_modifier("merge_${prefix}_args", sub {
+                    my ($orig, $self) = @_;
+                    return ($self->$orig, map {
+                        my ($key, $method) = ($_, $inject->{$_});
+                        ($key => $self->$method);
+                    } keys %$inject);
                 });
 
             } else {

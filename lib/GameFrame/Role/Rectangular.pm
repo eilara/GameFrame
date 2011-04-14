@@ -17,7 +17,7 @@ with 'GameFrame::Role::Positionable';
 # extract w and h if size given
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
-    my $size = $args{size};
+    my $size = delete $args{size};
     if ($size) {
         ($args{w}, $args{h}) = @$size;
     }
@@ -35,6 +35,12 @@ sub size {
 sub rect {
     my $self = shift;
     return [$self->actual_x, $self->actual_y, $self->w, $self->h];
+}
+
+sub scale_rect {
+    my ($self, $px) = @_;
+    my $px2 = $px / 2;
+    return [$self->x - $px2, $self->y - $px2, $self->w + $px, $self->h + $px];
 }
 
 sub actual_x {

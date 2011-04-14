@@ -9,6 +9,7 @@ our @EXPORT_OK = qw(
     is_in_rect
 );
 
+# TODO: move to rectangular
 sub is_in_rect {
     my ($x, $y, $left, $top, $w, $h) = @_;
     return

@@ -24,16 +24,20 @@ sub _build_sdl_event_observable {
 
 sub sdl_event {
     my ($self, $e) = @_;
+
     if ($e->type == SDL_MOUSEBUTTONUP) {
         $self->on_mouse_button_up($e->motion_x, $e->motion_y);
+
+    } elsif ($e->type == SDL_MOUSEBUTTONDOWN) {
+        $self->on_mouse_button_down($e->motion_x, $e->motion_y);
+
     } elsif ($e->type == SDL_MOUSEMOTION) {
         $self->on_mouse_motion($e->motion_x, $e->motion_y);
+
+    } elsif ($e->type == SDL_APPMOUSEFOCUS) {
+        $self->on_app_mouse_focus($e->active_gain);
     }
 }
-
-# TODO
-#    if ($e->type == SDL_APPMOUSEFOCUS) {
-#        $cursor->is_visible($e->active_gain);
 
 1;
 

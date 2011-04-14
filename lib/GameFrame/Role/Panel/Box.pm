@@ -27,10 +27,13 @@ around prepare_child_defs => sub {
     my ($orig, $self, @defs) = @_;
     my ($size, $orth_size, $place, $orth_place) =
         $self->_orientation_selectors;
-    my $it = natatime 2, @defs;
+    my $it = natatime 2, $self->$orig(@defs);
     my $at = 0;
 
     while (my ($name, $child_def) = $it->()) {
+        if (my $child_size = delete $child_def->{size}) {
+            ($child_def->{w}, $child_def->{h}) = @$child_size;
+        }
         $child_def->{$orth_size}  = $self->$orth_size;
         $child_def->{$orth_place} = $self->$orth_place;
         $child_def->{$place}      = $at;
@@ -40,17 +43,18 @@ around prepare_child_defs => sub {
 };
 
 # TODO this will be slow for too many children
-sub _find_child_at {
+sub find_child_at {
     my ($self, $x, $y) = @_;
     my ($size, undef, $place) = $self->_orientation_selectors;
     my $pos = $self->is_horizontal? $x: $y; 
-    for my $child ($self->all_children) {
+    for my $name ($self->child_names) {
+        my $child = $self->child($name);
         return $child if (
-            ($child->$place + $child->$size >  $pos)
-         && ($child->$place                 <= $pos)
+                ($child->$place + $child->$size >  $pos)
+             && ($child->$place                 <= $pos)
         );
     }
-    die "Can't find child: no child at $x, $y";
+    return undef;
 }
 
 sub _orientation_selectors {

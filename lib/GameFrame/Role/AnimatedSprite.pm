@@ -34,6 +34,15 @@ with qw(
     GameFrame::Role::Paintable
 );
 
+# copy size on image from size or w/h of self
+around BUILDARGS => sub {
+    my ($orig, $class, %args) = @_;
+    my $size = $args{size};
+    ($args{w}, $args{h}) = @$size if $size;
+    $args{image}->{size} ||= [$args{w}, $args{h}];
+    return $class->$orig(%args);
+};
+
 sub _build_sprite {
     my $self = shift;
     my $image = $self->image;
@@ -54,8 +63,8 @@ sub animate_sprite {
         start => sub { $self->sequence_animation($sequence) };
 }
 
-sub w { shift->sprite_w }
-sub h { shift->sprite_h }
+sub w { shift->image->{size}->[0] }
+sub h { shift->image->{size}->[1] }
 
 sub _update_x {
     my $self = shift;
