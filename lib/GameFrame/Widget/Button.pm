@@ -5,8 +5,9 @@ package GameFrame::Widget::Button;
 use Moose;
 use MooseX::Types::Moose qw(Bool CodeRef);
 
-has is_enabled => (is => 'rw', isa => Bool, default => 1);
 has is_pressed => (is => 'rw', isa => Bool, default => 0);
+has is_enabled => (is => 'rw', isa => Bool, default => 1,
+                   trigger => sub { shift->is_enabled_trigger });
 
 has target  => (is => 'ro', weak_ref => 1);
 has command => (is => 'ro', isa => CodeRef);
@@ -21,7 +22,7 @@ with qw(
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
     $args{image} = {
-        file      => delete $args{icon} || die 'no icon given',
+        file      => (delete($args{icon}) || die 'no icon given'),
         size      => [$args{w}, $args{h}],
         sequences => { default => [[0,0]], disabled => [[1,0]]},
     };
@@ -31,9 +32,18 @@ around BUILDARGS => sub {
     return $class->$orig(%args);
 };
 
+sub is_disabled { !shift->is_enabled }
+sub enable      { shift->is_enabled(1) }
+sub disable     { shift->is_enabled(0) }
+
+sub is_enabled_trigger {
+    my $self = shift;
+    $self->sequence_animation($self->is_enabled? 'default': 'disabled');
+}
+
 sub on_mouse_button_down {
     my $self = shift;
-    return if $self->is_pressed;
+    return if $self->is_pressed || $self->is_disabled;
     my $new_y = $self->y + 2;
     $self->y($new_y);
     $self->bg_y($new_y);

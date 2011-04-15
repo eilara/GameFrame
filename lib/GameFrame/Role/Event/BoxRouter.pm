@@ -22,8 +22,6 @@ for my $event (qw(mouse_button_up mouse_button_down)) {
         my $child = $self->_find_listening_child_at(@mouse_xy);
         return unless $child;
         $child->$method(@mouse_xy);
-
-#       print "SEF=$self xy=$mouse_xy[0] $mouse_xy[1] $child\n";
     };
 }
 

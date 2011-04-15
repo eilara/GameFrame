@@ -6,6 +6,7 @@ package GameFrame::Role::Panel::Box;
 # like a simple HTML row layout with no wrapping
 # each rectangular child must have a width defined for horizontal orientation
 # or a height for vertical orientation
+# if it does not, it will stretch- it will accept all left over space
 
 use Moose::Role;
 use MooseX::Types::Moose qw(Str);
@@ -27,17 +28,41 @@ around prepare_child_defs => sub {
     my ($orig, $self, @defs) = @_;
     my ($size, $orth_size, $place, $orth_place) =
         $self->_orientation_selectors;
-    my $it = natatime 2, $self->$orig(@defs);
-    my $at = 0;
+    my ($total_size, $at) = (0, 0);
+    my @flex_children;
 
-    while (my ($name, $child_def) = $it->()) {
+    # pass 1: sum child sizes
+    my $it1 = natatime 2, $self->$orig(@defs);
+    while (my ($name, $child_def) = $it1->()) {
         if (my $child_size = delete $child_def->{size}) {
             ($child_def->{w}, $child_def->{h}) = @$child_size;
         }
         $child_def->{$orth_size}  = $self->$orth_size;
         $child_def->{$orth_place} = $self->$orth_place;
-        $child_def->{$place}      = $at;
-        $at                       += $child_def->{$size};
+        my $child_def_size        = $child_def->{$size};
+
+        if ($child_def_size) {
+            $total_size += $child_def_size;
+        } else { # a flex child, no size given
+            push @flex_children, $child_def;
+        }
+    }
+
+    # set sizes on flex children
+    if (@flex_children) {
+        my $left_over      = $self->{$size} - $total_size;
+        my $flex_width     = int($left_over / scalar @flex_children);
+        my $flex_width_mod = $left_over % scalar @flex_children;
+        for my $child_def (@flex_children) {
+            $child_def->{$size} = $flex_width + ($flex_width_mod-- > 0? 1: 0);
+        }
+    }
+
+    # pass 2: distribute position among children
+    my $it2 = natatime 2, $self->$orig(@defs);
+    while (my ($name, $child_def) = $it2->()) {
+        $child_def->{$place} = $at;
+        $at                  += $child_def->{$size};
     }
     return @defs;
 };

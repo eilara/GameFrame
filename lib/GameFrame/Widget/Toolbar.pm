@@ -36,7 +36,6 @@ around prepare_child_defs => sub {
     my @new_defs = ($sep->());
     while (my ($name, $child_def) = $it->())
         { push @new_defs, ($name, $child_def, $sep->()) }
-    use Data::Dumper;print Dumper [@new_defs];
     return @new_defs;
 };
 

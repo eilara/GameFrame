@@ -152,7 +152,7 @@ sub interval(%) {
     if ($times) {
         for my $i (1..$times) {
             $block->($i);
-            rest $sleep_code>();
+            rest $sleep_code->();
         }
     } else {
         my $i = 1;

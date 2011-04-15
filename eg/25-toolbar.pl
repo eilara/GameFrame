@@ -3,27 +3,43 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
 # same as button demo, only using toolbar class, which saves some typing
+# also shows how to disable buttons
 
 # ------------------------------------------------------------------------------
 
-package GameFrame::eg::Button::Controller;
+package GameFrame::eg::Toolbar::Controller;
 use Moose;
 
 has counter => (
     traits  => ['Counter'],
     is      => 'ro',
     isa     => 'Num',
-    default => 0,
+    default => 1,
     handles => {inc => 'inc', dec => 'dec'},
+    trigger => sub { $_[0]->counter_change( $_[0]->counter ) },
 );
 
 with 'GameFrame::Role::Paintable';
+
+with 'MooseX::Role::Listenable' => {event => 'counter_change'};
 
 sub quit { exit }
 
 sub paint {
     my ($self, $surface) = @_;
     $surface->draw_gfx_text([300, 150], 0xFFFFFFFF, $self->counter);
+}
+
+# ------------------------------------------------------------------------------
+
+package GameFrame::eg::Toolbar::Disabler;
+use Moose;
+
+has button => (is => 'ro', required => 1, handles => ['is_enabled']);
+
+sub counter_change {
+    my ($self, $counter) = @_;
+    $self->is_enabled($counter > 0);
 }
 
 # ------------------------------------------------------------------------------
@@ -46,13 +62,12 @@ my $app = App->new(
     layer_manager_args => [layers => ['foreground']],
 );
 
-my $controller = GameFrame::eg::Button::Controller->new
-    (layer => 'foreground');
+my $controller = GameFrame::eg::Toolbar::Controller->new;
 
 my $button = sub {
     my ($name, $command) = @_;
     return ($name, {
-        child_class => 'GameFrame::Widget::Button',
+        child_class => Button,
         size        => [45, 44],
         layer       => 'foreground',
         bg_image    => 'button_background',
@@ -65,7 +80,6 @@ my $button = sub {
 my @panel = (
     panel => { # TODO add flex to box panel
         child_class => Panel,
-        w           => 640 - 5*1 - 3*45,
         bg_image    => 'toolbar_panel',
     },
 );
@@ -93,6 +107,10 @@ my $window = Window->new(
         },
     ],
 );
+
+my $disabler = GameFrame::eg::Toolbar::Disabler->new
+    (button => $window->child('toolbar')->child('button_dec'));
+$controller->add_counter_change_listener($disabler);    
 
 $app->run;
 

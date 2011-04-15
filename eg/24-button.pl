@@ -50,8 +50,7 @@ my $app = App->new(
     layer_manager_args => [layers => ['foreground']],
 );
 
-my $controller = GameFrame::eg::Button::Controller->new
-    (layer => 'foreground');
+my $controller = GameFrame::eg::Button::Controller->new;
 
 my $sep_idx;    
 my $sep = sub { 
@@ -100,7 +99,6 @@ my $window = Window->new(
                 panel => {
                     child_class => Panel,
                     orientation => 'horizontal',
-                    w           => 640 - 5*1 - 3*45,
                     bg_image    => 'toolbar_panel',
                 },
 
