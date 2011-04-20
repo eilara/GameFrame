@@ -1,5 +1,8 @@
 package GameFrame::Time::PauseResumeListenable;
 
+
+# TODO use coro current to store stuff
+
 use Moose;
 
 with 'MooseX::Role::Listenable' => {event => 'game_paused'};
@@ -243,4 +246,9 @@ sub move(%) {
 }
 
 1;
+
+__END__
+
+
+
 

@@ -30,9 +30,10 @@ around prepare_child_defs => sub {
         $self->_orientation_selectors;
     my ($total_size, $at) = (0, 0);
     my @flex_children;
+    @defs = $self->$orig(@defs);
 
     # pass 1: sum child sizes
-    my $it1 = natatime 2, $self->$orig(@defs);
+    my $it1 = natatime 2, @defs;
     while (my ($name, $child_def) = $it1->()) {
         if (my $child_size = delete $child_def->{size}) {
             ($child_def->{w}, $child_def->{h}) = @$child_size;
@@ -59,11 +60,12 @@ around prepare_child_defs => sub {
     }
 
     # pass 2: distribute position among children
-    my $it2 = natatime 2, $self->$orig(@defs);
+    my $it2 = natatime 2, @defs;
     while (my ($name, $child_def) = $it2->()) {
         $child_def->{$place} = $at;
         $at                  += $child_def->{$size};
     }
+
     return @defs;
 };
 

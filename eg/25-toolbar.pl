@@ -3,7 +3,14 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
 # same as button demo, only using toolbar class, which saves some typing
-# also shows how to disable buttons
+# also shows how to disable buttons, in this case when the counter reaches 0
+# the minus button is disabled, and enabled again when the counter rises
+# above 0
+# also shows how to solve the "I need to create lots of background images in
+# exact sizes", by using ImageFile, which can be used instead of image file
+# name, and scales the image to the size of the container using the Imager
+# module, so all you need to create is a 1px panel: the background image of
+# the panel is scaled to its size
 
 # ------------------------------------------------------------------------------
 
@@ -50,6 +57,7 @@ use warnings;
 use FindBin qw($Bin);
 use aliased 'GameFrame::App';
 use aliased 'GameFrame::Window';
+use aliased 'GameFrame::ImageFile';
 use aliased 'GameFrame::Widget::Panel';
 use aliased 'GameFrame::Widget::Button';
 use aliased 'GameFrame::Widget::Toolbar';
@@ -77,12 +85,14 @@ my $button = sub {
     });
 };
 
-my @panel = (
-    panel => { # TODO add flex to box panel
+my $next_panel_i;
+my $panel = sub {
+    return ('panel_'. ++$next_panel_i, {
         child_class => Panel,
-        bg_image    => 'toolbar_panel',
-    },
-);
+        bg_image    => ImageFile->new
+            (file => 'toolbar_panel_1x48', stretch => 1),
+    });
+};
 
 my $window = Window->new(
     orientation => 'vertical',
@@ -99,9 +109,10 @@ my $window = Window->new(
             h               => 48,
             separator_image => 'separator',
             child_defs      => [
+                $panel->(),
                 $button->(button_inc => sub { shift->inc }),
                 $button->(button_dec => sub { shift->dec }),
-                @panel,
+                $panel->(),
                 $button->(button_quit => sub { shift->quit }),
             ],
         },

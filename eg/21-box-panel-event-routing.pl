@@ -2,10 +2,11 @@
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
-# same as box-panel demo, only this time we route events to children
-# mouse over a panel to mouse x/y inside that panel
+# same as box-panel demo, only this time we route events to children.
+# mouse over a panel to show mouse x/y inside that panel
 #
 # note only the moused-over event sink fires events
+# to accept events from a box router parent, consume rectangular event sink role
 
 package GameFrame::eg::EventSink;
 use Moose;
@@ -18,7 +19,7 @@ with 'GameFrame::Role::Rectangle';
 with qw(
     GameFrame::Role::Paintable
     GameFrame::Role::Rectangular
-    GameFrame::Role::Event::Sink
+    GameFrame::Role::Event::Sink::Rectangular
 );
 
 sub paint {

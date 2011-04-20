@@ -41,32 +41,37 @@ sub is_enabled_trigger {
     $self->sequence_animation($self->is_enabled? 'default': 'disabled');
 }
 
-sub on_mouse_button_down {
-    my $self = shift;
-    return if $self->is_pressed || $self->is_disabled;
-    my $new_y = $self->y + 2;
-    $self->y($new_y);
-    $self->bg_y($new_y);
-    $self->is_pressed(1);
-}
+sub on_mouse_button_down { shift->press }
 
 sub on_mouse_button_up {
     my $self = shift;
-    return unless $self->is_pressed;
-    $self->_mouse_leave;
+    return unless $self->depress;
     $self->command->($self->target) if $self->command;
 }
 
-sub on_mouse_leave { shift->_mouse_leave }
+sub on_mouse_leave { shift->depress }
 
-sub _mouse_leave {
+sub press {
     my $self = shift;
-    return unless $self->is_pressed;
-    my $new_y = $self->y - 2;
+    return 0 if $self->is_pressed || $self->is_disabled;
+    $self->_set_button_depth(2);
+    $self->is_pressed(1);
+    return 1;
+}
+
+sub depress {
+    my $self = shift;
+    return 0 unless $self->is_pressed;
+    $self->_set_button_depth(-2);
+    $self->is_pressed(0);
+    return 1;
+}
+
+sub _set_button_depth {
+    my ($self, $depth) = @_;
+    my $new_y = $self->y + $depth;
     $self->y($new_y);
     $self->bg_y($new_y);
-    $self->is_pressed(0);
 }
 
 1;
-
