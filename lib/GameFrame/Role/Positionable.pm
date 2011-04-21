@@ -27,6 +27,11 @@ sub translate_point {
                          [$x + $by_1, $y + $by_2];
 }
 
+sub self_translate_point {
+    my ($self, @args) = @_;
+    $self->xy($self->translate_point(@args));
+}
+
 sub translate_point_by_angle {
     my ($self, $angle, $distance) = @_;
     my ($x, $y) = @{ $self->xy };

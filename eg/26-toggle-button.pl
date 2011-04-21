@@ -13,15 +13,25 @@ use lib "$Bin/../lib";
 package GameFrame::eg::ToggleButton::Player;
 use Moose;
 use Coro;
+use Coro::EV;
+use EV;
+use aliased 'Coro::Signal';
 use Math::Trig;
 use Time::HiRes qw(time);
 
 # for benefit of health bar
 sub w { 25 }
 
+has field_size => (is => 'ro', required => 1);
+
 has last_hit_time => (is => 'rw', default => -1);
-has direction     => (is => 'rw', default =>  0, # 0=freeze, -1=left, 1=right
-                      trigger => sub { shift->direction_trigger });
+
+has direction => (is => 'rw', default =>  0, # 0=freeze, -1=left, 1=right
+                  trigger => sub { shift->direction_trigger });
+
+has direction_change_signal => (is => 'ro', default => sub { Signal->new });
+
+has move_wake_signal => (is => 'rw');
 
 with 'GameFrame::Role::Point';
 
@@ -40,17 +50,50 @@ has '+angle' => (default => pi*6/4);
 with 'MooseX::Role::Listenable' => {event => 'dir_change'};
 
 sub start {
-    my $self = shift;
-    # wait for direction change
-    # move according to direction
-    # until dir change, if changed move according to direction
-    # repeat
+    my $self           = shift;
+    my $sleep          = 1/60;
+    my $should_wait    = 1;
+    my $completed_move = 0;
+    my $shield_radius  = 25;
+    my $max_x          = $self->field_size->[0];
+    my $dir            = sub { $self->direction };
+    my $in_field       = sub { 
+        ($dir->() == -1 and $self->x > $shield_radius) ||
+        ($dir->() ==  1 and ($self->x < $max_x - $shield_radius))
+    };
+
+    while (1) { # TODO while alive
+        $self->direction_change_signal->wait if $should_wait;           
+        if ($dir->()) {
+            $self->move_wake_signal(my $signal = Signal->new);
+            my $timer = EV::timer 0, $sleep, sub {
+                if ($in_field->()) {
+                    $self->self_translate_point(x => 2*$dir->());
+                } else {
+                    $completed_move = 1;
+                    $signal->send;
+                }
+            };
+            $signal->wait;
+            undef $timer;
+            $should_wait = $completed_move || ($dir->()? 0: 1);
+            $self->move_wake_signal(undef);
+            $completed_move = 0;
+        }
+    }
 }
 
+# called from event handling coro
 sub direction_trigger {
     my $self = shift;
     my $d = $self->direction;
     $self->dir_change($d);
+    # if we are moving stop timer, else just send signal
+    if ($self->move_wake_signal) {
+        $self->move_wake_signal->send;
+    } else {
+        $self->direction_change_signal->send;
+    }
 }
 
 sub paint {
