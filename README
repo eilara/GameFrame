@@ -12,6 +12,7 @@ MooseX::Role::Listenable
 MooseX::Role::BuildInstanceOf
 EV
 SDLx::Controller::Coro
+Math::Vector::Real
 
 
 

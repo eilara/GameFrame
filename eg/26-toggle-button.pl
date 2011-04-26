@@ -18,6 +18,9 @@ use EV;
 use aliased 'Coro::Signal';
 use Math::Trig;
 use Time::HiRes qw(time);
+use List::Util qw(max);
+use Math::Vector::Real;
+use GameFrame::Util qw(is_in_rect);
 
 # for benefit of health bar
 sub w { 25 }
@@ -26,12 +29,10 @@ has field_size => (is => 'ro', required => 1);
 
 has last_hit_time => (is => 'rw', default => -1);
 
-has direction => (is => 'rw', default =>  0, # 0=freeze, -1=left, 1=right
-                  trigger => sub { shift->direction_trigger });
+has velocity => (is => 'rw', default => sub { V(0, 0) },
+          trigger => sub { shift->velocity_trigger });
 
-has direction_change_signal => (is => 'ro', default => sub { Signal->new });
-
-has move_wake_signal => (is => 'rw');
+has wakeup_signal => (is => 'ro', default => sub { Signal->new });
 
 with 'GameFrame::Role::Point';
 
@@ -40,60 +41,79 @@ with qw(
     GameFrame::Role::Figure
     GameFrame::Role::HealthBar
     GameFrame::Role::Scoreable
-    GameFrame::Role::Movable
     GameFrame::Role::Active
 );
 
 # ship faces up
 has '+angle' => (default => pi*6/4);
 
-with 'MooseX::Role::Listenable' => {event => 'dir_change'};
+with 'MooseX::Role::Listenable' => {event => 'velocity_change'};
 
 sub start {
-    my $self           = shift;
-    my $sleep          = 1/60;
-    my $should_wait    = 1;
-    my $completed_move = 0;
-    my $shield_radius  = 25;
-    my $max_x          = $self->field_size->[0];
-    my $dir            = sub { $self->direction };
-    my $in_field       = sub { 
-        ($dir->() == -1 and $self->x > $shield_radius) ||
-        ($dir->() ==  1 and ($self->x < $max_x - $shield_radius))
-    };
+    my $self = shift;
 
-    while (1) { # TODO while alive
-        $self->direction_change_signal->wait if $should_wait;           
-        if ($dir->()) {
-            $self->move_wake_signal(my $signal = Signal->new);
-            my $timer = EV::timer 0, $sleep, sub {
-                if ($in_field->()) {
-                    $self->self_translate_point(x => 2*$dir->());
-                } else {
-                    $completed_move = 1;
-                    $signal->send;
-                }
-            };
-            $signal->wait;
-            undef $timer;
-            $should_wait = $completed_move || ($dir->()? 0: 1);
-            $self->move_wake_signal(undef);
-            $completed_move = 0;
-        }
+    my $shield = 25; # px shield size
+    # field rectangle defined so shield does not leave field
+    my $field  = [
+        $shield, 0,
+        $self->field_size->[0] - 2 * $shield, $self->field_size->[1],
+    ];
+
+    # given this next position, is it ok to move to it? when false, halt movement        
+    my $constraint_cb = sub { is_in_rect @{ pop() }, @$field };
+
+    my $signal = $self->wakeup_signal;
+
+    $self->move(
+        signal => $self->wakeup_signal,
+        limit  => $constraint_cb,
+        until  => sub { 1 },
+    );
+}
+
+sub move {
+    my ($self, %args) = @_;
+    my ($signal, $limit, $until) = @args{qw<signal limit until>};
+    my $sleep = 1/60;
+
+    while ($until->()) {
+
+        my $timer;
+        # repeated EV timer does movement and runs as long as constraint_cb
+        # is true for next position, or until canceled because of wake up signal
+        $timer = EV::timer 0, $sleep, sub {
+
+            my $new_pos = V(@{ $self->xy }) + $sleep * $self->velocity;
+            if ($limit->($self, $new_pos)) {
+                $self->xy([@$new_pos]);
+            } else {
+                $signal->send;
+            }
+
+        } unless $self->velocity == V(0, 0);
+
+        $signal->wait;
+        undef $timer;
     }
 }
 
 # called from event handling coro
-sub direction_trigger {
+sub velocity_trigger {
     my $self = shift;
-    my $d = $self->direction;
-    $self->dir_change($d);
-    # if we are moving stop timer, else just send signal
-    if ($self->move_wake_signal) {
-        $self->move_wake_signal->send;
-    } else {
-        $self->direction_change_signal->send;
-    }
+    $self->velocity_change($self->velocity);
+    $self->wakeup_signal->send;
+}
+
+# toggle buttons send the toggle state as a param
+sub left  { shift->velocity( V(pop()? -250: 0, 0) ) }
+sub right { shift->velocity( V(pop()?  250: 0, 0) ) }
+sub quit  { exit }
+
+sub on_hit { shift->last_hit_time(time) }
+
+sub on_death {
+    my $self = shift;
+    print "DEAD\n";
 }
 
 sub paint {
@@ -110,22 +130,6 @@ sub paint {
    $surface->draw_circle($self->xy, 25, $color, 1);
 }
 
-# toggle buttons send the toggle state as a param
-sub left  { shift->direction(pop()? -1: 0) }
-sub right { shift->direction(pop()?  1: 0) }
-
-sub quit { exit }
-
-sub on_hit { shift->last_hit_time(time) }
-
-sub on_death {
-    my $self = shift;
-    async {
-        $self->move(to => sub { [320, 480] });
-        exit;
-    };
-}
-
 # ------------------------------------------------------------------------------
 
 package GameFrame::eg::ToggleButton::Controller;
@@ -133,9 +137,14 @@ use Moose;
 
 has toolbar => (is => 'ro', required => 1, handles => ['child']);
 
-sub dir_change {
-    my ($self, $direction) = @_;
-    $self->child('button_'. ($direction == -1? 'right': 'left'))->toggle_off;
+sub velocity_change {
+    my ($self, $v) = @_;
+    my $dir = $v->[0];
+    return if $dir == 0;
+    $self->child(
+        'button_'.
+        ($dir < 0? 'right': 'left')
+    )->toggle_off;
 }
 
 # ------------------------------------------------------------------------------
@@ -215,9 +224,10 @@ my $window = Window->new(
     ],
 );
 
+# keep the buttons in sync- when one is hit the other should be untoggled
 my $controller = GameFrame::eg::ToggleButton::Controller->new
     (toolbar => $window->child('toolbar'));
-$player->add_dir_change_listener($controller);    
+$player->add_velocity_change_listener($controller);    
 
 $app->run;
 
