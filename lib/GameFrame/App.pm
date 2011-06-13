@@ -1,5 +1,15 @@
 package GameFrame::App;
 
+# create an App (only ONE app) to open the game window and init the game
+# loop
+# configure with title, size, bg_color, resource dir, and layer manager
+# args
+# wraps SDLx::App and Coro controller, should be the only place that
+# accesses them
+# works with the Paintable, SDLEventHandler roles
+# composed from the ResourceManager and the LayerManager, to support
+# resource loading and paint layering respectively
+
 use Moose;
 use MooseX::Types::Moose qw(Bool Int Str ArrayRef);
 
@@ -59,6 +69,7 @@ sub BUILD {
     my $self = shift;
     # must be called before creating paintables or sdl event handlers
     GameFrame::Role::Paintable::Set_SDL_Paint_Observable($self);
+    GameFrame::Role::Paintable::Set_SDL_Main_Surface($self->sdl);
     GameFrame::Role::SDLEventHandler::Set_SDL_Event_Observable($self);
     GameFrame::ResourceManager::Set_Path($self->resources)
         if defined $self->resources;
@@ -76,10 +87,9 @@ sub run {
 
 sub sdl_paint_handler {
     my $self = shift;
-    my $surface = $self->sdl;
     my $c = $self->bg_color;
-    $surface->draw_rect(undef, $c) if defined $c;
-    $self->paint($self->sdl);
+    $self->sdl->draw_rect(undef, $c) if defined $c;
+    $self->paint;
     $self->update;
 }
 

@@ -1,5 +1,7 @@
 experiments in Perl + SDL + Coro 2D game programming
 
+NOTE: in major refactoring, currently only eg 1-10 work
+
 requires:
 
 aliased

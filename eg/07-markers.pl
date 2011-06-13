@@ -14,7 +14,7 @@ my $app = App->new(
     title => 'Markers',
 );
 
-my $markers = Markers->new(size => $app->size, spacing => 32);
+my $markers = Markers->new(size => $app->size, xy => [0, 0], spacing => 32);
 
 $app->run;
 

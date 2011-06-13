@@ -2,7 +2,7 @@ package GameFrame::Role::Active;
 
 use Moose::Role;
 use Coro;
-use GameFrame::Time qw(cleanup_thread);
+#use GameFrame::Time qw(cleanup_thread);
 
 # active objects have a coro and must implement start()
 # a new coro is created on construction which runs your start()
@@ -23,12 +23,7 @@ sub deactivate {
     my $self = shift;
     my $coro = $self->coro;
     $coro->cancel;
-    cleanup_thread($coro);
-}
-
-# TODO
-sub transfer {
-    my $self = shift;
+#    cleanup_thread($coro);
 }
 
 1;

@@ -20,8 +20,6 @@ use lib "$Bin/../lib";
 package GameFrame::eg::LayerCircle;
 use Moose;
 
-with 'GameFrame::Role::Point';
-
 with qw(
     GameFrame::Role::Paintable
     GameFrame::Role::Positionable
@@ -30,10 +28,9 @@ with qw(
 has color => (is => 'ro');
 
 sub paint {
-    my ($self, $surface) = @_;
-    my $xy = $self->xy;
-    $surface->draw_circle_filled($xy, 100, $self->color, 1);
-    $surface->draw_circle($xy, 100, $self->color + 0xFF - 0x4F, 1);
+    my $self = shift;
+    $self->draw_circle_filled($self->xy, 100, $self->color, 1);
+    $self->draw_circle($self->xy, 100, $self->color + 0xFF - 0x4F, 1);
 }
 
 # ------------------------------------------------------------------------------

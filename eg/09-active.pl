@@ -3,37 +3,53 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
 # a simple active object
-# watch the circle radius change
+# watch the circle radius change twice, then disappear
 #
-# active objects have their own thread and call blocking
-# functions from GameFrame::Time, like animate(), used below
+# active objects have their own thread in which they run
+# they must implement start, which runs in their own thread
 # the start() method of your active object will be called
 # after construction by the Coro scheduler on a new thread
+#
+# whats unique about them, is that they can block, using
+# sleep() or wait for signal
+# 
+# usually you dont use sleep(), instead use the high level
+# timer based methods from Animated or Movable roles, that are
+# featured in the next demos
+#
+# sleep() is problematic because you can't stop it easily,
+# and it does not support the pause feature
+# when we have elastic time support, it will not support that either ;)
 
-package GameFrame::eg::AnimatedCircle;
+package GameFrame::eg::ActiveCircle;
 use Moose;
-use GameFrame::Time qw(animate);
+use Coro::Timer qw(sleep);
 
-has radius => (is => 'rw', default => 1);
+has radius => (is => 'rw', default => 100);
 
 with qw(
     GameFrame::Role::Paintable
+    GameFrame::Role::Positionable
     GameFrame::Role::Active
 );
 
 sub start {
     my $self = shift;
-    while (1) {
-        animate
-            type  => [linear => 1, 100, 50], # 1 to 100 in 50 steps
-            on    => [radius => $self],      # animate radius property
-            sleep => 1/20;                   # sleep 1/20th of a sec
+    for (1..2) {
+        for my $r (1..100) {
+            $self->radius(101 - $r);
+            sleep 1/60;
+        }
+        for my $r (1..100) {
+            $self->radius($r);
+            sleep 1/60;
+        }
     }
 }
 
 sub paint {
-    my ($self, $surface) = @_;
-    $surface->draw_circle_filled([200, 200], $self->radius, 0xFFFFFFFF, 1);
+    my $self = shift;
+    $self->draw_circle_filled($self->xy, $self->radius, 0xFFFFFFFF, 1);
 }
 
 # ------------------------------------------------------------------------------
@@ -49,7 +65,8 @@ my $app = App->new(
     bg_color => 0x0,
 );
 
-my $circle = GameFrame::eg::AnimatedCircle->new;
+# dont keep a ref around, so that it will vanish after animation is done
+GameFrame::eg::ActiveCircle->new(xy => [100, 100]);
 
 $app->run;
 

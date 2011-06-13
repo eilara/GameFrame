@@ -21,10 +21,10 @@ sub on_mouse_button_up {
 }
 
 sub paint {
-    my ($self, $surface) = @_;
-    $surface->draw_rect(undef, 0x000000FF); # undef means color entire surface
+    my $self = shift;
+    $self->draw_rect(undef, 0x000000FF); # undef means color entire surface
     my $text = join ',', @{ $self->last_click };
-    $surface->draw_gfx_text([100, 100], 0xFFFFFFFF, $text);
+    $self->draw_gfx_text([100, 100], 0xFFFFFFFF, $text);
 }
 
 # ------------------------------------------------------------------------------

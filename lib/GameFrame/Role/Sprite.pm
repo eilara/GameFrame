@@ -10,10 +10,6 @@ use aliased 'GameFrame::ImageFile';
 
 coerce ImageFile, from Str, via { ImageFile->new(file => $_) };
 
-sub x;sub y; # for benefit of Rectangular role
-has x => (is => 'rw', required => 1, isa => Num, default => 0, trigger => sub { shift->_update_x});
-has y => (is => 'rw', required => 1, isa => Num, default => 0, trigger => sub { shift->_update_y});
-
 has image => (
     is       => 'ro',
     isa      => ImageFile, 
@@ -21,10 +17,6 @@ has image => (
     coerce   => 1,
     handles  => ['build_sdl_sprite'],
 );
-
-# optional, useful because it is passed on to the ImageFile sprite builder
-# and ImageFile may want to stretch the image to this size
-has image_size => (is => 'ro', isa => ArrayRef[Int]);
 
 has sprite => (
     is         => 'ro',
@@ -44,24 +36,22 @@ with qw(
     GameFrame::Role::Paintable
 );
 
-sub _build_sprite { $_[0]->build_sdl_sprite($_[0]->image_size) }
-
-sub w { shift->sprite_w }
-sub h { shift->sprite_h }
-
-sub _update_x {
-    my $self = shift;
-    $self->sprite_x($self->actual_x);
+sub _build_sprite {
+   my $self = shift;
+   return $self->build_sdl_sprite( $self->size );
 }
 
-sub _update_y {
-    my $self = shift;
-    $self->sprite_y($self->actual_y);
+around xy_trigger => sub {
+    my ($orig, $self) = @_;
+    my $xy = $self->_actual_xy;
+    $self->sprite_x($xy->[0]);
+    $self->sprite_y($xy->[1]);
+    return $self->$orig($xy);
 };
 
 sub paint {
-    my ($self, $surface) = @_;
-    $self->draw($surface);
+    my $self = shift;
+    $self->draw($self->surface);
 }
 
 1;

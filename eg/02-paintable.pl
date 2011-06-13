@@ -10,8 +10,8 @@ use Moose;
 with 'GameFrame::Role::Paintable';
 
 sub paint {
-    my ($self, $surface) = @_;
-    $surface->draw_gfx_text([100, 100], 0xFFFFFFFF, 'I can be painted');
+    my $self = shift;
+    $self->draw_gfx_text([100, 100], 0xFFFFFFFF, 'I can be painted');
 }
 
 # ------------------------------------------------------------------------------

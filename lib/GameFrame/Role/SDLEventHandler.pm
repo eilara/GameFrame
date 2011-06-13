@@ -1,5 +1,8 @@
 package GameFrame::Role::SDLEventHandler;
 
+# an event sink which gets its events from SDL directly, and sends
+# them to the correct event sink method
+
 use Moose::Role;
 use SDL::Events;
 

@@ -1,5 +1,10 @@
 package GameFrame::Role::Event::Sink;
 
+# these are the methods you can implement if you want to listen to events
+# you will only get events if you implement SDLEventHandler, or if you
+# place the event sink inside a container which routes events to its children,
+# e.g. Widget::Panel
+
 use Moose::Role;
 
 sub on_mouse_motion      {}

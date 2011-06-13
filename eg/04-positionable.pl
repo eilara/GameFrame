@@ -8,8 +8,6 @@ use lib "$Bin/../lib";
 package GameFrame::eg::ClickCircle;
 use Moose;
 
-with 'GameFrame::Role::Point'; # to get the x/y fields
-
 with qw(
     GameFrame::Role::SDLEventHandler
     GameFrame::Role::Paintable
@@ -22,8 +20,8 @@ sub on_mouse_button_up {
 }
 
 sub paint {
-    my ($self, $surface) = @_;
-    $surface->draw_circle($self->xy, 100, 0xFFFFFFFF, 1);
+    my $self = shift;
+    $self->draw_circle($self->xy, 100, 0xFFFFFFFF, 1);
 }
 
 # ------------------------------------------------------------------------------
@@ -39,7 +37,7 @@ my $app = App->new(
                      # bg_color on every paint
 );
 
-my $paintable = GameFrame::eg::ClickCircle->new(x => 100, y => 100);
+my $paintable = GameFrame::eg::ClickCircle->new(xy => [100, 100]);
 
 $app->run;
 

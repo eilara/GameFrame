@@ -9,21 +9,15 @@ has markers => (
     is       => 'ro',
     required => 1,
     isa      => Markers,
-    handles  => [qw(cell_center_x cell_center_y)],
+    handles  => [qw(cell_center_xy)],
 );
 
-around _update_x => sub {
+around xy_trigger => sub {
     my ($orig, $self) = @_;
-    my $center = $self->cell_center_x($self->x);
-    $center -= $self->w / 2 if $self->centered;
-    $self->sprite_x($center);
-};
-
-around _update_y => sub {
-    my ($orig, $self) = @_;
-    my $center = $self->cell_center_y($self->y);
-    $center -= $self->h / 2 if $self->centered;
-    $self->sprite_y($center);
+    my $xy = $self->cell_center_xy($self->_actual_xy) ;
+    $xy -= $self->_size / 2 if $self->is_centered;
+    $self->sprite_x($xy->[0]);
+    $self->sprite_y($xy->[1]);
 };
 
 1;

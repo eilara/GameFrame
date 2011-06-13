@@ -5,6 +5,7 @@ package GameFrame::Grid::Markers;
 use Moose;
 use MooseX::Types::Moose qw(Bool Int ArrayRef);
 use aliased 'GameFrame::Grid::Markers::Axis';
+use Math::Vector::Real;
 
 has spacing => (
     is       => 'ro',
@@ -19,8 +20,6 @@ has grid_color => (
     isa      => Int,
     default  => 0x1F1F1FFF,
 );
-
-with 'GameFrame::Role::Rectangle';
 
 with qw(
     GameFrame::Role::Paintable
@@ -51,28 +50,23 @@ sub _build_axis {
 sub compute_cell_pos {
     my ($self, $xy) = @_;
     my $s = $self->spacing;
-    return [int( $xy->[0] / $s ), int( $xy->[1] / $s )];
+    my ($x, $y) = @{ $self->_xy };
+    return [int( ($xy->[0] - $x) / $s ), int( ($xy->[1] - $y) / $s )];
 }
 
-sub cell_center_x {
-    my ($self, $x) = @_;
-    my $offset_x = $self->x;
-    my $s = $self->spacing;
-    return $offset_x + int( ($x - $offset_x) / $s ) * $s + $s / 2;
-}
-
-sub cell_center_y {
-    my ($self, $y) = @_;
-    my $offset_y = $self->y;
-    my $s = $self->spacing;
-    return $offset_y + int( ($y - $offset_y) / $s ) * $s + $s / 2;
+sub cell_center_xy {
+    my ($self, $xy) = @_;
+    my $pos    = V( @{ $self->compute_cell_pos($xy) } );
+    my $s      = $self->spacing;
+    my $offset = $self->_xy;
+    return [@{ $offset + $pos * $s + V($s/2, $s/2) }];
 }
 
 sub paint {
-    my ($self, $surface) = @_;
+    my $self = shift;
     my ($x, $y, $w, $h, $c) = (@{$self->xy}, @{$self->size}, $self->grid_color);
-    $surface->draw_line([$_, $y], [$_, $y + $h], $c, 0) for @{ $self->col_marks };
-    $surface->draw_line([$x, $_], [$x + $w, $_], $c, 0) for @{ $self->row_marks };
+    $self->draw_line([$x + $_, $y], [$x + $_, $y + $h], $c, 0) for @{ $self->col_marks };
+    $self->draw_line([$x, $y + $_], [$x + $w, $y + $_], $c, 0) for @{ $self->row_marks };
 }
 
 1;

@@ -9,10 +9,11 @@ has children => (
     isa      => 'Set::Object',
     default  => sub { Set::Object->new },
     handles  => {
-        insert_child => 'insert',
-        remove_child => 'remove',
-        all_children => 'members',
-        child_count  => 'size',
+        insert_child    => 'insert',
+        insert_children => 'insert',
+        remove_child    => 'remove',
+        all_children    => 'members',
+        child_count     => 'size',
     },
 );
 

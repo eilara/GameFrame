@@ -22,7 +22,7 @@ has counter => (
     is      => 'ro',
     isa     => 'Num',
     default => 1,
-    handles => {inc => 'inc', dec => 'dec'},
+    handles => [qw(inc dec)],
     trigger => sub { $_[0]->counter_change( $_[0]->counter ) },
 );
 

@@ -1,31 +1,52 @@
 package GameFrame::Role::Paintable;
 
+# role for paintable objects
+#
+# once constructed, the paintable object method paint() (required of
+# consumers) will be called once per frame displayed, with no parameters
+#
+# the responsibility of paint() is drawing things on the surface
+# it should not update the object state, or start/stop any Coros
+#
+# you can draw things in paint() using the surface primitives, e.g.
+# $self->draw_rect([0, 0, 100, 100], 0xFFFFFFFF)
+# note there is no need to pass the surface
+#
+# if you still need the surface, you can get it with $self->surface
+#
+# you can configure paintable objects with a layer, and each will
+# be drawn on the correct layer
+# the layer manager will paint the layers in the correct order
+#
+# you can set visibility with is_visible field and show()/hide() methods
+# your paint() method will not be called if the paintable is hidden
+
 use Moose::Role;
 use MooseX::Types::Moose qw(Bool Str);
 
-# set this before creating any paintables
-my $SDL_Paint_Observable;
+# set these two before creating any paintables
+my ($SDL_Paint_Observable, $SDL_Main_Surface);
 sub Set_SDL_Paint_Observable { $SDL_Paint_Observable = shift }
+sub Set_SDL_Main_Surface     { $SDL_Main_Surface     = shift }
 
 requires 'paint';
 
-has sdl_paint_observable => (
+has surface => (
     is       => 'ro',
     weak_ref => 1,
-    required => 1,
-    default  => sub { shift->_build_sdl_paint_observable },
+    default  => sub { shift->_build_surface },
+    handles  => [qw(draw_gfx_text draw_circle draw_circle_filled
+                    draw_line draw_rect)],
 );
 
 has layer => ( # layer name
     is       => 'ro',
-    required => 1,
     isa      => Str,
     default  => 'background',
 );
 
 has is_visible => (
     is       => 'rw',
-    required => 1,
     isa      => Bool,
     default  => 1,
 );
@@ -33,16 +54,16 @@ has is_visible => (
 sub show { shift->is_visible(1) }
 sub hide { shift->is_visible(0) }
 
-sub _build_sdl_paint_observable {
+sub _build_surface {
     my $self = shift;
     $SDL_Paint_Observable->add_sdl_paint_listener($self);
-    return $SDL_Paint_Observable;
+    return $SDL_Main_Surface;
 }
 
 sub sdl_paint {
-    my ($self, $surface) = @_;
+    my $self = shift;
     return unless $self->is_visible;
-    $self->paint($surface);
+    $self->paint;
 }
 
 1;

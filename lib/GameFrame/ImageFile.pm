@@ -1,6 +1,7 @@
 package GameFrame::ImageFile;
 
 # use in sprites as image
+# if stretch is true, then 
 
 use Moose;
 use MooseX::Types::Moose qw(Bool Str);

@@ -52,12 +52,12 @@ sub add_sdl_paint_listener {
 }
 
 sub paint {
-    my ($self, $surface) = @_;
+    my $self = shift;
     my $layers = $self->layer_map;
     # now empty the new_layer into the layer map
     $self->empty_new_layer($layers);
     # fire the sdl_paint event for each layer from back to front
-    $layers->{$_}->sdl_paint($surface) for @{$self->layers};
+    $layers->{$_}->sdl_paint for @{$self->layers};
 }
 
 1;

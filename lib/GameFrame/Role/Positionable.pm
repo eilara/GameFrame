@@ -1,18 +1,55 @@
 package GameFrame::Role::Positionable;
 
-use Moose::Role;
-use Math::Trig;
-use GameFrame::Util qw(distance);
+# role for object that can be positioned
+# required constructor argument xy
+# you can override xy_trigger which will be called
+# when position is changed
+# HACK underscore prefix return Vector2D, no underscore return array ref
+#      because SDL methods cant take Vector2D, for which I should send a patch
 
-requires 'x', 'y';
+use Moose::Role;
+use GameFrame::Types qw(Vector2D);
+
+has _xy => (is => 'ro', isa => Vector2D, required => 1, coerce => 1,
+            trigger => sub { shift->xy_trigger });
+
+around BUILDARGS => sub {
+    my ($orig, $class, %args) = @_;
+    $args{_xy} = delete $args{xy};
+    return $class->$orig(%args);
+};
 
 sub xy {
     my $self = shift;
-    return [$self->x, $self->y] unless @_;
-    my ($x, $y) = @{ shift() };
-    $self->x($x);
-    $self->y($y);
+    my $xy = $self->_xy;
+    return [@$xy] unless @_;
+    $xy->[0] = $_[0]->[0];
+    $xy->[1] = $_[0]->[1];
+    $self->xy_trigger;
 }
+ 
+sub x {
+    my $self = shift;
+    my $xy = $self->_xy;
+    return $xy->[0] unless @_;
+    $xy->[0] = $_[0];
+    $self->xy_trigger;
+}
+
+sub y {
+    my $self = shift;
+    my $xy = $self->_xy;
+    return $xy->[1] unless @_;
+    $xy->[1] = $_[0];
+    $self->xy_trigger($xy);
+}
+
+sub xy_trigger {}
+
+1;
+
+__END__
+
 
 sub distance_to {
     my ($self, $to_xy) = @_;
@@ -50,16 +87,10 @@ sub compute_angle_to {
     return atan2($dy, $dx);
 }
 
-# extract x and y from xy if given
-around BUILDARGS => sub {
-    my ($orig, $class, %args) = @_;
-    my $xy = $args{xy};
-    if ($xy) {
-        ($args{x}, $args{y}) = @$xy;
-    }
-    return $class->$orig(%args);
-};
-
 1;
 
+__END__
 
+
+# use Math::Trig;
+use GameFrame::Util qw(distance);

@@ -29,9 +29,10 @@ has field_size => (is => 'ro', required => 1);
 
 has last_hit_time => (is => 'rw', default => -1);
 
+# things needed for movement
 has velocity => (is => 'rw', default => sub { V(0, 0) },
           trigger => sub { shift->velocity_trigger });
-
+has speed => (is => 'ro', default => 200);
 has wakeup_signal => (is => 'ro', default => sub { Signal->new });
 
 with 'GameFrame::Role::Point';
@@ -51,7 +52,6 @@ with 'MooseX::Role::Listenable' => {event => 'velocity_change'};
 
 sub start {
     my $self = shift;
-
     my $shield = 25; # px shield size
     # field rectangle defined so shield does not leave field
     my $field  = [
@@ -71,30 +71,79 @@ sub start {
     );
 }
 
+my $Is_Currently_Paused = 0;
+my $Resume_Signal = Signal->new;
+# requires: xy, velocity, compute_new_pos, signal must be fired when
+# velocity changes, or until predicate changes, or limit changes
+# TODO
+#   - more general repeat-work-until
 sub move {
     my ($self, %args) = @_;
     my ($signal, $limit, $until) = @args{qw<signal limit until>};
-    my $sleep = 1/60;
+    my $min_sleep = 1/10;
 
     while ($until->()) {
 
         my $timer;
-        # repeated EV timer does movement and runs as long as constraint_cb
-        # is true for next position, or until canceled because of wake up signal
-        $timer = EV::timer 0, $sleep, sub {
+        if ($self->velocity != V(0, 0)) {
 
-            my $new_pos = V(@{ $self->xy }) + $sleep * $self->velocity;
-            if ($limit->($self, $new_pos)) {
-                $self->xy([@$new_pos]);
-            } else {
-                $signal->send;
-            }
+            my $sleep = max(1/abs($self->velocity), $min_sleep);
 
-        } unless $self->velocity == V(0, 0);
+            $timer = $self->build_timer(
+                sleep  => $sleep,
+                after  => $sleep,
+                signal => $signal,
+                limit  => $limit,
+            );
+
+        }
 
         $signal->wait;
         undef $timer;
+
+        if ($Is_Currently_Paused) {
+            print " + paused!\n";
+            $Resume_Signal->wait;
+            print " - resumed!\n";
+        }
     }
+}
+
+sub build_timer {
+    my ($self, %args) = @_;
+    my ($after, $sleep, $signal, $limit) =
+        @args{qw<after sleep signal limit>};
+    my $last_tick = EV::now;
+
+    return EV::timer $after, $sleep, sub {
+
+        my $now     = EV::now;
+        my $elapsed = $now - $last_tick;
+        my $new_pos = $self->compute_new_pos($elapsed);
+        $last_tick  = $now;
+
+        if ($limit->($self, $new_pos)) {
+            $self->xy([@$new_pos]);
+        } else {
+            $signal->send;
+        }
+
+    };
+}
+
+sub pause { # $is_pause true for pause, false for resume
+    my ($self, $is_pause) = @_;
+    $Is_Currently_Paused = $is_pause || 0;
+    if ($Is_Currently_Paused) {
+        $self->wakeup_signal->send;
+    } else {
+        $Resume_Signal->broadcast;
+    }
+}
+
+sub compute_new_pos {
+    my ($self, $elapsed) = @_;
+    return V(@{ $self->xy }) + $elapsed * $self->velocity;
 }
 
 # called from event handling coro
@@ -105,9 +154,10 @@ sub velocity_trigger {
 }
 
 # toggle buttons send the toggle state as a param
-sub left  { shift->velocity( V(pop()? -250: 0, 0) ) }
-sub right { shift->velocity( V(pop()?  250: 0, 0) ) }
-sub quit  { exit }
+sub left  { $_[0]->velocity( V($_[1]? -1*$_[0]->speed: 0, 0) ) }
+sub right { $_[0]->velocity( V($_[1]?  1*$_[0]->speed: 0, 0) ) }
+
+sub quit { exit }
 
 sub on_hit { shift->last_hit_time(time) }
 
@@ -178,15 +228,15 @@ my $player = GameFrame::eg::ToggleButton::Player->new(
 );
 
 my $button = sub {
-    my ($name, $command, $is_toggle) = @_;
-    return ($name, {
+    my ($name, $is_toggle) = @_;
+    return ("button_$name", {
         child_class => ($is_toggle? Toggle: Button),
         size        => [45, 44],
         layer       => 'foreground',
         bg_image    => 'button_background',
-        icon        => $name,
+        icon        => "button_$name",
         target      => $player,
-        command     => $command,
+        command     => sub { $_[0]->$name($_[1]) },
     });
 };
 
@@ -215,10 +265,11 @@ my $window = Window->new(
             separator_image => 'separator',
             child_defs      => [
                 $panel->(),
-                $button->(button_left  => sub { $_[0]-> left($_[1]) }, 1),
-                $button->(button_right => sub { $_[0]->right($_[1]) }, 1),
+                $button->(left  => 1),
+                $button->(right => 1),
                 $panel->(),
-                $button->(button_quit  => sub { shift->quit  }),
+                $button->(pause => 1),
+                $button->('quit'),
             ],
         },
     ],

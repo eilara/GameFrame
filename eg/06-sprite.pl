@@ -30,17 +30,16 @@ sub on_app_mouse_focus { shift->is_visible(pop) }
 
 sub on_mouse_motion {
     my ($self, $x, $y) = @_;
-    $self->x($x);
-    $self->y($y);
+    $self->xy([$x, $y]);
 }
 
 sub on_mouse_button_up {
     my $self = shift;
     push @{$self->children}, GameFrame::eg::StickySprite->new(
-        xy       => $self->xy,
-        image    => 'arrow',
-        layer    => 'middle',
-        centered => 1,
+        rect        => $self->rect,
+        image       => 'arrow',
+        layer       => 'middle',
+        is_centered => 1,
     );
 }
 
@@ -62,7 +61,7 @@ my $app = App->new(
 );
 
 my $sprite = GameFrame::eg::MoveAroundSprite->new(
-    xy    => [100, 100],
+    rect  => [100, 100, 22, 26],
     image => 'arrow',
     layer => 'top',
 );
