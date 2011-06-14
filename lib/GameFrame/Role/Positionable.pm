@@ -10,18 +10,18 @@ package GameFrame::Role::Positionable;
 use Moose::Role;
 use GameFrame::Types qw(Vector2D);
 
-has _xy => (is => 'ro', isa => Vector2D, required => 1, coerce => 1,
-            trigger => sub { shift->xy_trigger });
+has xy_vec => (is => 'rw', isa => Vector2D, required => 1, coerce => 1,
+               trigger => sub { shift->xy_trigger });
 
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
-    $args{_xy} = delete $args{xy};
+    $args{xy_vec} = delete $args{xy};
     return $class->$orig(%args);
 };
 
 sub xy {
     my $self = shift;
-    my $xy = $self->_xy;
+    my $xy = $self->xy_vec;
     return [@$xy] unless @_;
     $xy->[0] = $_[0]->[0];
     $xy->[1] = $_[0]->[1];
@@ -30,7 +30,7 @@ sub xy {
  
 sub x {
     my $self = shift;
-    my $xy = $self->_xy;
+    my $xy = $self->xy_vec;
     return $xy->[0] unless @_;
     $xy->[0] = $_[0];
     $self->xy_trigger;
@@ -38,10 +38,10 @@ sub x {
 
 sub y {
     my $self = shift;
-    my $xy = $self->_xy;
+    my $xy = $self->xy_vec;
     return $xy->[1] unless @_;
     $xy->[1] = $_[0];
-    $self->xy_trigger($xy);
+    $self->xy_trigger;
 }
 
 sub xy_trigger {}

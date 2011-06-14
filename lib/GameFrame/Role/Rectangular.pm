@@ -8,6 +8,8 @@ package GameFrame::Role::Rectangular;
 # use center_xy to get center, always
 # use actual_xy to get corner or center depending on centered attribute
 # so usualy you want to use actual_xy which will just DWIM
+#
+# TODO not _ prefix but _vec suffix for versions which deal with vectors and not arrays
 
 use Moose::Role;
 use MooseX::Types::Moose qw(Bool);
@@ -52,7 +54,7 @@ sub h {
 
 sub _center_xy {
     my $self = shift;
-    return $self->_xy + $self->_size / 2;
+    return $self->xy_vec + $self->_size / 2;
 }
 
 sub center_xy {
@@ -62,7 +64,7 @@ sub center_xy {
 
 sub _actual_xy {
     my $self = shift;
-    return $self->is_centered? $self->_center_xy: $self->_xy;
+    return $self->is_centered? $self->_center_xy: $self->xy_vec;
 }
 
 sub actual_xy {

@@ -10,8 +10,17 @@ package GameFrame::Animation;
 # - repeat    - set to int number of cycles to repeat
 # - bounce    - switch from/to on cycle repeat
 #
-# TODO: wait_for_animation_complete will never return if animation is not started
-#
+# TODO: - wait_for_animation_complete will never return if animation is not started
+#       - integer value optimization
+#       - path, collection of from_to
+#       - more duration types, e.g. for move by keypress, moves forever
+#         or with direction vector, duration as num of ticks for sprite?
+#       - sprite animation
+#       - color animation
+#       - move in circle? easing functions
+#       - float animation on opacity
+#       - interval animation for spawning- sets wave num? int
+#         must be only on distinct in this case, int optimization
 
 use Moose;
 use Scalar::Util qw(weaken);
@@ -157,21 +166,6 @@ __END__
 # TODO <= depends on attribute type!!!!!!!!!!!!
 #print "computing value: from=$from delta=$delta elapsed=$elapsed normalized_elapsed=$normalized_elapsed\n";
 
-use MooseX::Types::Moose qw(Bool Num Int Str CodeRef);
-use List::Util qw(max);
-# original animation spec, which may have changed because of bounce
-# for example, but is needed when restarting animation
-has orig_spec  => (is => 'rw');
-
-# time of cycle start
-has start_time => (is => 'rw'); # Num|Undef
-
-# time of last pause start, if paused, or undef
-has pause_start_time => (is => 'rw'); # Num|Undef
-
-# sum of all time paused during this cycle
-has pause_time => (is => 'rw', default => 0);
-
 
 # normalize from/to/speed/duration
 around BUILDARGS => sub {
@@ -208,62 +202,12 @@ around BUILDARGS => sub {
     return $class->$orig(%args);
 };
 
-sub DEMOLISH { shift->stop_timer }
-sub start_animation {
-    my $self = shift;
-    $self->start_time(undef);
-    $self->pause_time(0);
-
-    # reset animation specs if changed, needed because something (e.g.
-    # bounce) could have changed the spec in previous previous cycles
-    if (my $spec = $self->orig_spec) {
-        for my $method (qw(speed from from_to limit)) {
-            $self->$method($spec->{$method});
-        }
-    }
-print "Starting timer at t=".EV::now." time=".EV::time()."\n";
-    $self->start_timer;
-}
-
-sub pause_animation {
-    my $self = shift;
-    $self->stop_timer;
-    $self->pause_start_time(EV::now);
-}
-
-sub resume_animation {
-    my $self            = shift;
-    my $now             = EV::now;
-    my $pause_time      = $self->pause_time + $now - $self->pause_start_time;
-    my $sleep           = $self->compute_sleep;
-    my $total_elapsed   = $now - $self->start_time;
-    my $sleep_performed = $total_elapsed - $pause_time;
-    my $after           = $sleep - $sleep_performed;
-#    print "after=$after sleep=$sleep pause_time=$pause_time total_elapsed=$total_elapsed sleep_performed=$sleep_performed\n";
-    $self->pause_time($pause_time);
-    $self->pause_start_time(undef);
-#    $self->set_timer($after, $sleep);
-    $self->start_timer;
-}
 
 print "Cycle tick: ";    
 my $n =  EV::now; $n = sprintf("%.2f", $n);
 my $x = sprintf("%.2f", $elapsed);
 my $v = sprintf("%.2f", $new_value); print "now=$n t=$x  time=".EV::time()." value=$v\n";
 
-
-
-# TODO <= depends on attribute type!!!!!!!!!!!!
-sub compute_limit_predicate {
-    my ($self, $value, $final_value) = @_;
-    return $self->speed > 0? $value > $final_value: $value < $final_value;
-}
-
-reverse dir
-
-
-    my $to = $self->from;
-    my $from_to = $self->from_to;
 
     # 1st reversal we remember original spec, needed when restarting
     unless ($self->orig_spec) {

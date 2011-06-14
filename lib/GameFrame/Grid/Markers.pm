@@ -50,7 +50,7 @@ sub _build_axis {
 sub compute_cell_pos {
     my ($self, $xy) = @_;
     my $s = $self->spacing;
-    my ($x, $y) = @{ $self->_xy };
+    my ($x, $y) = @{ $self->xy };
     return [int( ($xy->[0] - $x) / $s ), int( ($xy->[1] - $y) / $s )];
 }
 
@@ -58,7 +58,7 @@ sub cell_center_xy {
     my ($self, $xy) = @_;
     my $pos    = V( @{ $self->compute_cell_pos($xy) } );
     my $s      = $self->spacing;
-    my $offset = $self->_xy;
+    my $offset = $self->xy_vec;
     return [@{ $offset + $pos * $s + V($s/2, $s/2) }];
 }
 
