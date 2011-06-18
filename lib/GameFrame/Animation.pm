@@ -3,30 +3,25 @@ package GameFrame::Animation;
 # an animation is constructed using a spec:
 #
 # - from_to   - array ref of initial and final values
-# - duration  - cycle duration in seconds
+# - one of the two:
+#   - duration  - cycle duration in seconds
+#   - speed - absolute value of average speed used to compute duration 
 # - target    - target object with the attribute neing animated
 # - attribute - attribute name on the target
 # - forever   - if true, cycle will repeat forever
 # - repeat    - set to int number of cycles to repeat
 # - bounce    - switch from/to on cycle repeat
+# - curve     - easing function defines progress on path vs. time
 #
-# TODO: - wait_for_animation_complete will never return if animation is not started
-#       - integer value optimization
-#       - path, collection of from_to
-#       - more duration types, e.g. for move by keypress, moves forever
-#         or with direction vector, duration as num of ticks for sprite?
-#       - sprite animation
-#       - color animation
-#       - move in circle? easing functions
-#       - float animation on opacity
-#       - interval animation for spawning- sets wave num? int
-#         must be only on distinct in this case, int optimization
 
 use Moose;
 use Scalar::Util qw(weaken);
 use MooseX::Types::Moose qw(Bool Num Int Str ArrayRef);
 use GameFrame::MooseX;
 use aliased 'GameFrame::Animation::Timer';
+use aliased 'GameFrame::Animation::CycleLimit';
+use aliased 'GameFrame::Animation::Curve';
+use aliased 'GameFrame::Animation::Proxy';
 
 use aliased 'Coro::Signal';
 
@@ -35,11 +30,9 @@ my $MIN_SLEEP = 1 / 100;
 has duration  => (is => 'ro', isa => 'Num', required => 1);
 has from_to   => (is => 'ro', isa => 'ArrayRef', required => 1);
 
-has target    => (is => 'ro', required => 1, weak_ref => 1);
-has attribute => (is => 'ro', isa => Str, required => 1);
-              
 has forever   => (is => 'ro', isa => Bool, default => 0);
 has bounce    => (is => 'ro', isa => Bool, default => 0);
+has curve     => (is => 'ro', isa => Str , default => 'linear');
 
 # filpped on bounce
 has is_reversed_dir  => (
@@ -75,11 +68,11 @@ compose_from Timer,
         my $self = shift;
         weaken $self; # don't want args to hold strong ref to self
         return (
-            duration_args => [duration => $self->duration],
-            provider      => $self,
+            cycle_limit => CycleLimit->time_period($self->duration),
+            provider    => $self,
         );
     },
-    has => { handles => {
+    has => {handles => {
         start_animation      => 'start',
         restart_animation    => 'restart',
         stop_timer           => 'stop',
@@ -88,6 +81,8 @@ compose_from Timer,
         is_animation_started => 'is_timer_active',
     },
 };
+
+compose_from Proxy, has => {handles => [qw(set_attribute_value)]};
 
 with 'GameFrame::Role::Animation';
 
@@ -127,13 +122,6 @@ sub _animation_complete {
     $self->broadcast_animation_complete;
 }
 
-sub set_attribute_value {
-    my ($self, $value) = @_;
-    my $att = $self->attribute;
-#print "Setting value: $value\n";
-    $self->target->$att($value);
-}
-
 sub set_attribute_final_value {
     my $self = shift;
     $self->set_attribute_value($self->compute_final_value);
@@ -151,13 +139,31 @@ sub compute_final_value {
 
 sub compute_value_at {
     my ($self, $elapsed) = @_;
-    my $from_to = $self->from_to;
-    $from_to = [reverse @$from_to] if $self->is_reversed_dir;
-    my $from = $from_to->[0];
-    my $delta = $from_to->[1] - $from;
-    my $normalized_elapsed = $elapsed / $self->duration;
-    return $from + $delta * $normalized_elapsed;
+    my $easing   = $self->curve;
+    my @from_to  = @{ $self->from_to };
+    @from_to     = reverse(@from_to) if $self->is_reversed_dir;
+    my $time     = $elapsed / $self->duration; # normalized elapsed between 0 and 1
+    my $delta    = $from_to[1] - $from_to[0];
+    return Curve->$easing($time, $from_to[0], $delta);
 }
+
+around BUILDARGS => sub {
+    my ($orig, $class, %args) = @_;
+
+    if (my $speed = delete $args{speed}) {
+        my @from_to = @{ $args{from_to} };
+        my $delta   = $from_to[1] - $from_to[0];
+        $args{duration} = $delta / $speed;
+    }
+
+    $args{proxy_args} = [
+        target    => delete($args{target}),
+        attribute => delete($args{attribute}),
+        ($args{proxy_args} || ()),
+    ];
+
+    return $class->$orig(%args);
+};
 
 1;
 

@@ -1,22 +1,21 @@
 package GameFrame::Animation::Timer;
 
 use Moose;
+use MooseX::Types::Moose qw(CodeRef);
 use Scalar::Util qw(weaken);
 use GameFrame::MooseX;
 use aliased 'GameFrame::Animation::Clock';
-use aliased 'GameFrame::Animation::Cycle::Duration';
 
 # a timer
 # 
-# construct with a provider object, and timer duration details
+# construct with a provider object, and cycle limit callback
 # The provider must implement compute_sleep, timer_tick, and cycle_complete
 # they will be called with 1 parameter- the time elapsed since the start of the cycle
 # not including pause time
 #
-# the timer duration defines the cycle time- how long before the timer for the
-# cycle is stopped
-# is_cycle_complete on the duration will be called before each timer tick, and
-# must return true when cycle is to be stopped
+# the cycle limit will be called before each timer tick and must return
+# true when the cycle is to be stopped
+# when it does, no more ticks will be called for the timer in this cycle
 #
 # compute_sleep will be called (at various times) and must return how many seconds the 
 # timer should pause, after the tick elapsed at the given time
@@ -26,9 +25,8 @@ use aliased 'GameFrame::Animation::Cycle::Duration';
 # timer_tick will be called each time the timer ticks with the real elapsed time since
 # cycle start
 #
-# cycle_complete will be called after the duration responds with true to 
-# is_cycle_complete
-#
+# cycle_complete will be called right after the cycle limit callback turns true
+# 
 # the timer ticks forever, or until stopped
 #
 # this is just like EV::periodic, except:
@@ -48,7 +46,13 @@ has provider => (is => 'ro', required => 1, weak_ref => 1, handles => [qw(
     cycle_complete
 )]);
 
-compose_from Duration, has => {handles => ['is_cycle_complete']};
+has cycle_limit => (
+    traits   => ['Code'],
+    is       => 'ro',
+    isa      => 'CodeRef',
+    required => 1,
+    handles => {is_cycle_complete => 'execute'},
+);
 
 # provide a virtual clock for testing, or a shared clock for playing
 # with elastic time (TODO)
@@ -130,6 +134,8 @@ sub _on_timer_tick {
     $self->timer_tick($elapsed);
 }
 
+# TODO should take optional start time to avoid drift
+#      in animation chaining, or when parallel animating
 sub start {
     my $self = shift;
 #print "Starting\n";
