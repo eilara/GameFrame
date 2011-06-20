@@ -68,13 +68,13 @@ has timer => (is => 'ro', lazy_build => 1, handles => {
 });
 
 # when did current cycle start
-has cycle_start_time  => (is => 'rw');
+has cycle_start_time => (is => 'rw');
 
 # when did the last cycle start, in case we are restarting a cycle
-has last_cycle_start_time  => (is => 'rw');
+has last_cycle_start_time => (is => 'rw');
 
 # sum of all sleep performed so far in cycle
-has total_sleep_computed  => (is => 'rw', default => 0);
+has total_sleep_computed => (is => 'rw', default => 0);
 
 # when was last pause started, if in pause
 has pause_start_time => (is => 'rw');

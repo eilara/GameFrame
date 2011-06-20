@@ -1,7 +1,5 @@
 package GameFrame::Animation::Composite;
 
-# should share a role with Animation class
-
 use Moose;
 use Set::Object;
 
@@ -19,30 +17,11 @@ has children => (
 
 with 'GameFrame::Role::Animation';
 
-sub start_animation {
-    my $self = shift;
-    $_->start_animation for $self->animations;
-}
-
-sub restart_animation {
-    my $self = shift;
-    $_->restart_animation for $self->animations;
-}
-
-sub stop_animation {
-    my $self = shift;
-    $_->stop_animation for $self->animations;
-}
-
-sub pause_animation {
-    my $self = shift;
-    $_->pause_animation for $self->animations;
-}
-
-sub resume_animation {
-    my $self = shift;
-    $_->resume_animation for $self->animations;
-}
+sub start_animation   { shift->_for_children('start_animation') }
+sub restart_animation { shift->_for_children('restart_animation') }
+sub stop_animation    { shift->_for_children('stop_animation') }
+sub pause_animation   { shift->_for_children('pause_animation') }
+sub resume_animation  { shift->_for_children('resume_animation') }
 
 # TODO what should this answer while paused?
 sub is_animation_started {
@@ -56,6 +35,11 @@ sub wait_for_animation_complete {
     my $self = shift;
     $_->wait_for_animation_complete
         for grep { $_->is_animation_started } $self->animations;
+}
+
+sub _for_children {
+    my ($self, $method, @args) = @_;
+    $_->$method(@args) for $self->animations;
 }
 
 1;

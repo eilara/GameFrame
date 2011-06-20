@@ -6,8 +6,11 @@ use lib "$Bin/../lib";
 
 package GameFrame::eg::AnimatedCircle;
 use Moose;
+use MooseX::Types::Moose qw(Int);
 
-has radius => (is => 'rw', default  => 1);
+# add Int constraint to turn on integer optimization in tweening
+has radius => (is => 'rw', isa => Int, default  => 1);
+
 has spec   => (is => 'ro', required => 1); # animation spec
 
 with qw(
@@ -78,20 +81,22 @@ GameFrame::eg::AnimatedCircle->new(
 );
 
 # animate more than one attribute at once
+# note no need to set from_to, you can just specify 'to' and from
+# will be computed from the target
 GameFrame::eg::AnimatedCircle->new(
     xy   => [450, 50],
     spec => [
         {
             attribute => 'radius',
             duration  => 2,
-            from_to   => [1, 50],
+            to        => 50,
             bounce    => 1,
             forever   => 1,
         },
         {
             attribute => 'x',
             duration  => 1,
-            from_to   => [450, 350],
+            to        => 350,
             bounce    => 1,
             forever   => 1,
         },
@@ -107,7 +112,7 @@ GameFrame::eg::AnimatedCircle->new(
     spec   => {
         attribute => 'xy_vec',
         duration  => 2,
-        from_to   => [V(520, 20), V(620, 80)],
+        to        => V(620, 80),
         bounce    => 1,
         forever   => 1,
     },
@@ -120,7 +125,7 @@ GameFrame::eg::AnimatedCircle->new(
     spec   => {
         attribute => 'x',
         duration  => 2,
-        from_to   => [25, 615],
+        to        => 615,
         bounce    => 1,
         forever   => 1,
         curve     => 'swing',
@@ -134,7 +139,7 @@ GameFrame::eg::AnimatedCircle->new(
     spec   => {
         attribute => 'x',
         duration  => 4,
-        from_to   => [25, 615],
+        to        => 615,
         bounce    => 1,
         forever   => 1,
         curve     => 'in_out_bounce',
