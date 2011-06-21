@@ -1,4 +1,4 @@
-package GameFrame::Animation::Proxy::Int;
+package GameFrame::Animation::Proxy::Vector2D;
 
 use Moose;
 
@@ -6,8 +6,9 @@ extends 'GameFrame::Animation::Proxy';
 
 around set_attribute_value => sub {
     my ($orig, $self, $value) = @_;
-    my $round = sprintf('%.0f', $value);
-    $self->$orig($round);
+    $value->[0] = sprintf('%.0f', $value->[0]);
+    $value->[1] = sprintf('%.0f', $value->[1]);
+    $self->$orig($value);
 };
 
 sub compute_timer_sleep {

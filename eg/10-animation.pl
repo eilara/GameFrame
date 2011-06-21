@@ -151,6 +151,4 @@ $app->run;
 
 __END__
 
-$app->run;
-
 

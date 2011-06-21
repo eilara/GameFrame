@@ -15,9 +15,13 @@ sub get_init_value {
 sub set_attribute_value {
     my ($self, $value) = @_;
     my $att = $self->attribute;
-# how to round vectors
-#    $value = sprintf('%.0f', $value) if $self->round_value;
     $self->target->$att($value);
+}
+
+# default proxy has nothing to say about preferred cycle sleep between ticks
+sub compute_timer_sleep {
+    my ($self, $speed) = @_;
+    return ();
 }
 
 1;

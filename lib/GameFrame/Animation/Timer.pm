@@ -1,26 +1,24 @@
 package GameFrame::Animation::Timer;
 
 use Moose;
-use MooseX::Types::Moose qw(CodeRef);
+use MooseX::Types::Moose qw(Num CodeRef);
 use Scalar::Util qw(weaken);
 use GameFrame::MooseX;
 use aliased 'GameFrame::Animation::Clock';
 
 # a timer
 # 
-# construct with a provider object, and cycle limit callback
-# The provider must implement compute_sleep, timer_tick, and cycle_complete
+# construct with a provider object and a cycle limit callback
+# default timer sleep is 1/60th of a sec, which you can override by setting
+# cycle_sleep
+#
+# The provider must implement timer_tick and cycle_complete
 # they will be called with 1 parameter- the time elapsed since the start of the cycle
 # not including pause time
 #
 # the cycle limit will be called before each timer tick and must return
 # true when the cycle is to be stopped
 # when it does, no more ticks will be called for the timer in this cycle
-#
-# compute_sleep will be called (at various times) and must return how many seconds the 
-# timer should pause, after the tick elapsed at the given time
-# so compute_sleep(10) needs to return how many seconds to sleep after the timer tick
-# which will or has happened at 10 seconds after cycle start
 #
 # timer_tick will be called each time the timer ticks with the real elapsed time since
 # cycle start
@@ -40,11 +38,14 @@ use aliased 'GameFrame::Animation::Clock';
 # * is_active while paused???
 # * elastic time
 
+my $MIN_SLEEP = 1 / 60;
+
 has provider => (is => 'ro', required => 1, weak_ref => 1, handles => [qw(
-    compute_sleep
     timer_tick
     cycle_complete
 )]);
+
+has cycle_sleep => (is => 'ro', isa => Num, default => $MIN_SLEEP);
 
 has cycle_limit => (
     traits   => ['Code'],
@@ -95,6 +96,15 @@ sub _build_timer {
     );
 }
 
+# if cycle sleep is given, default it in case it is too small
+around BUILDARGS => sub {
+    my ($orig, $class, %args) = @_;
+    my $cycle_sleep = $args{cycle_sleep};
+    delete($args{cycle_sleep})
+        if $cycle_sleep && ($cycle_sleep < $MIN_SLEEP);
+    return $class->$orig(%args);
+};
+
 sub DEMOLISH { shift->stop_timer }
 
 sub _on_compute_sleep {
@@ -105,7 +115,7 @@ sub _on_compute_sleep {
     if ($self->sleep_after_resume) {
         $self->sleep_after_resume(undef);
     } else {
-        $next_elapsed += $self->compute_sleep($elapsed);
+        $next_elapsed += $self->cycle_sleep;
     }
 
     my $next_elapsed_and_pause = $next_elapsed + $self->total_cycle_pause;

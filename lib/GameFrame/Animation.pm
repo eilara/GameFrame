@@ -29,8 +29,6 @@ use aliased 'GameFrame::Animation::Proxy';
 
 use aliased 'Coro::Signal';
 
-my $MIN_SLEEP = 1 / 100;
-
 has duration  => (is => 'ro', isa => 'Num'     , lazy_build => 1);
 has from_to   => (is => 'ro', isa => 'ArrayRef', lazy_build => 1);
 
@@ -77,6 +75,7 @@ compose_from Timer,
         return (
             cycle_limit => CycleLimit->time_period($self->duration),
             provider    => $self,
+            $self->_compute_timer_sleep,
         );
     },
     has => {handles => {
@@ -90,7 +89,11 @@ compose_from Timer,
 };
 
 compose_from Proxy,
-    has => {handles => [qw(set_attribute_value get_init_value)]};
+    has => {handles => [qw(
+        set_attribute_value
+        get_init_value
+        compute_timer_sleep
+    )]};
 
 with 'GameFrame::Role::Animation';
 
@@ -112,16 +115,23 @@ sub _build_from_to { # if from_to was not given we compute 'from'
     return [$self->get_init_value, $to];
 }
 
+sub _compute_speed {
+    my $self     = shift;
+    my @from_to  = @{ $self->from_to };
+    my $delta    = $from_to[1] - $from_to[0];
+    my $speed    = abs($delta) / $self->duration;
+    return $speed;
+}
+
+sub _compute_timer_sleep {
+    my $self = shift;
+    return $self->compute_timer_sleep($self->_compute_speed);
+}
+
 sub stop_animation {
     my $self = shift;
     $self->stop_timer;
     $self->_animation_complete;
-}
-
-# TODO resolution,by,sleep
-sub compute_sleep {
-    my ($self, $elapsed) = @_;
-    return $MIN_SLEEP; 
 }
 
 sub timer_tick {
@@ -190,11 +200,4 @@ around BUILDARGS => sub {
 1;
 
 __END__
-print "Cycle tick: ";    
-my $n =  EV::now; $n = sprintf("%.2f", $n);
-my $x = sprintf("%.2f", $elapsed);
-my $v = sprintf("%.2f", $new_value); print "now=$n t=$x  time=".EV::time()." value=$v\n";
-
-# TODO <= depends on attribute type!!!!!!!!!!!!
-sub compute_sleep { max(1/abs(shift->speed), $MIN_SLEEP) }
 

@@ -3,6 +3,7 @@ package GameFrame::Animation::Proxy::Factory;
 use Moose;
 use aliased 'GameFrame::Animation::Proxy';
 use aliased 'GameFrame::Animation::Proxy::Int' => 'IntProxy';
+use aliased 'GameFrame::Animation::Proxy::Vector2D' => 'Vector2DProxy';
 use List::Util qw(first);
 
 sub find_proxy {
@@ -19,8 +20,9 @@ sub find_proxy {
     my $type = $att->type_constraint;
     return Proxy unless $type;
 
-    return $type eq 'Int'? IntProxy:
-                           Proxy;
+    return $type eq 'Int'                       ? IntProxy:
+           $type eq 'GameFrame::Types::Vector2D'? Vector2DProxy:
+                                                  Proxy;
 }
 
 1;
