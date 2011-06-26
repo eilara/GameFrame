@@ -2,6 +2,7 @@ package GameFrame::Role::Active;
 
 use Moose::Role;
 use Coro;
+use Scalar::Util qw(weaken);
 #use GameFrame::Time qw(cleanup_thread);
 
 # active objects have a coro and must implement start()
@@ -14,7 +15,13 @@ has coro => (
     isa      => 'Coro',
     required => 1,
     weak_ref => 1, # coro scheduler has a ref to the coro, if it lives
-    default  => sub { my $self = shift; return async { $self->start } },
+    default  => sub {
+        my $self = shift;
+        return async {
+            $self->start;
+            return; # ?!?!
+        };
+    },
 );
 
 # should only be called from a different thread than the one deactivated

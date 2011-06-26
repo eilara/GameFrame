@@ -33,8 +33,7 @@ sub is_animation_started {
 
 sub wait_for_animation_complete {
     my $self = shift;
-    $_->wait_for_animation_complete
-        for grep { $_->is_animation_started } $self->animations;
+    $_->wait_for_animation_complete for $self->animations;
 }
 
 sub _for_children {

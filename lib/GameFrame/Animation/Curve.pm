@@ -1,5 +1,7 @@
 package GameFrame::Animation::Curve;
 
+# TODO do these have to take $from?
+
 use Moose;
 use Math::Trig;
 

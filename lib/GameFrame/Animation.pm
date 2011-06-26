@@ -16,59 +16,35 @@ package GameFrame::Animation;
 # - bounce    - switch from/to on cycle repeat
 # - curve     - easing function defines progress on path vs. time
 #
+# an animation is built from:
+# - Timeline: for which the animation is the provider
+#   it calls the methods timer_tick and cycle_complete
+#   on this animation
+#   it is create with$ a cycle_limit built from the duration
+# - Proxy: the connection to the target, on it we get/set the
+#   animated value, and consult it concerning the animation
+#   resolution for int optimization
+#
+# all the animation does is create the 2 correctly, and then
+# convert calls from the timeline into values on the proxy
 
 use Moose;
 use Scalar::Util qw(weaken);
 use MooseX::Types::Moose qw(Bool Num Int Str ArrayRef);
 use GameFrame::MooseX;
-use aliased 'GameFrame::Animation::Timer';
+use aliased 'GameFrame::Animation::Timeline';
 use aliased 'GameFrame::Animation::CycleLimit';
 use aliased 'GameFrame::Animation::Curve';
 use aliased 'GameFrame::Animation::Proxy::Factory' => 'ProxyFactory';
 use aliased 'GameFrame::Animation::Proxy';
 
-use aliased 'Coro::Signal';
+has duration => (is => 'ro', isa => 'Num'     , lazy_build => 1);
+has from_to  => (is => 'ro', isa => 'ArrayRef', lazy_build => 1);
+has speed    => (is => 'ro', isa => 'Num'); # optional instead of duration
+has to       => (is => 'ro');               # optional instead of from_to
+has curve    => (is => 'ro', isa => Str , default => 'linear');
 
-has duration  => (is => 'ro', isa => 'Num'     , lazy_build => 1);
-has from_to   => (is => 'ro', isa => 'ArrayRef', lazy_build => 1);
-
-has speed     => (is => 'ro', isa => 'Num'); # optional instead of duration
-has to        => (is => 'ro');               # optional instead of from_to
-
-has forever   => (is => 'ro', isa => Bool, default => 0);
-has bounce    => (is => 'ro', isa => Bool, default => 0);
-has curve     => (is => 'ro', isa => Str , default => 'linear');
-
-# filpped on bounce
-has is_reversed_dir  => (
-    traits  => ['Bool'],
-    is      => 'rw',
-    isa     => 'Bool',
-    default => 0,
-    handles => {toggle_dir => 'toggle', set_forward_dir => 'unset'},
-);
-
-# repeat counter decreases by 1 every cycle iteration
-has repeat => (
-    traits  => ['Counter'],
-    is      => 'ro',
-    isa     => 'Int',
-    default => 1,
-    handles => {dec_repeat => 'dec'},
-);
-
-# signals to outside listener of animation complete, wait for it with
-# wait_for_animation_complete() method
-has animation_complete_signal => (
-    is      => 'ro',
-    default => sub { Signal->new },
-    handles => {
-        wait_for_animation_complete  => 'wait',
-        broadcast_animation_complete => 'broadcast',
-    },
-);
-
-compose_from Timer,
+compose_from Timeline,
     inject => sub {
         my $self = shift;
         weaken $self; # don't want args to hold strong ref to self
@@ -79,12 +55,14 @@ compose_from Timer,
         );
     },
     has => {handles => {
-        start_animation      => 'start',
-        restart_animation    => 'restart',
-        stop_timer           => 'stop',
-        pause_animation      => 'pause',
-        resume_animation     => 'resume',
-        is_animation_started => 'is_timer_active',
+        start_animation             => 'start',
+        restart_animation           => 'restart',
+        stop_animation              => 'stop',
+        pause_animation             => 'pause',
+        resume_animation            => 'resume',
+        is_animation_started        => 'is_timer_active',
+        wait_for_animation_complete => 'wait_for_animation_complete',
+        is_reversed_dir             => 'is_reversed_dir',
     },
 };
 
@@ -128,12 +106,6 @@ sub _compute_timer_sleep {
     return $self->compute_timer_sleep($self->_compute_speed);
 }
 
-sub stop_animation {
-    my $self = shift;
-    $self->stop_timer;
-    $self->_animation_complete;
-}
-
 sub timer_tick {
     my ($self, $elapsed) = @_;
     my $new_value = $self->compute_value_at($elapsed);
@@ -143,29 +115,11 @@ sub timer_tick {
 sub cycle_complete {
     my $self = shift;
     $self->set_attribute_final_value;
-    if ($self->forever or $self->repeat > 1) {
-        $self->dec_repeat unless $self->forever;
-        $self->reverse_dir if $self->bounce;
-        $self->restart_animation;
-    } else {
-        $self->_animation_complete;
-    }
-}
-
-sub _animation_complete {
-    my $self = shift;
-    $self->set_forward_dir;
-    $self->broadcast_animation_complete;
 }
 
 sub set_attribute_final_value {
     my $self = shift;
     $self->set_attribute_value($self->compute_final_value);
-}
-
-sub reverse_dir {
-    my $self = shift;
-    $self->toggle_dir;
 }
 
 sub compute_final_value {
@@ -192,9 +146,18 @@ around BUILDARGS => sub {
         ($args{proxy_args} || ()),
     ];
 
-    $args{proxy_class} = ProxyFactory->find_proxy(@{ $args{proxy_args} });
+    $args{proxy_class} = ProxyFactory->find_proxy
+        (@{ $args{proxy_args} });
 
-    return $class->$orig(%args);
+    $args{timeline_args} = [ $args{timeline_args} || () ];
+    for my $att (qw(repeat bounce forever)) {
+        if (exists $args{$att}) {
+            my $val = delete $args{$att};
+            push @{$args{timeline_args}}, $att, $val;
+        }
+     }
+
+     return $class->$orig(%args);
 };
 
 1;

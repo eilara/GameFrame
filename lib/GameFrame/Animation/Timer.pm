@@ -96,7 +96,7 @@ sub _build_timer {
     );
 }
 
-# if cycle sleep is given, default it in case it is too small
+# if cycle sleep is given, default it, in case it is too small
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
     my $cycle_sleep = $args{cycle_sleep};
@@ -136,19 +136,21 @@ sub _on_timer_tick {
     my $elapsed = $self->now - $self->cycle_start_time;
 
     if ($self->is_cycle_complete($elapsed)) {
-        $self->stop;
+        $self->_stop;
         $self->cycle_complete;
+        $self->_on_final_timer_tick;
         return;
     }
 
     $self->timer_tick($elapsed);
 }
 
+sub _on_final_timer_tick {}
+
 # TODO should take optional start time to avoid drift
 #      in animation chaining, or when parallel animating
 sub start {
     my $self = shift;
-#print "Starting\n";
     $self->_on_first_timer_tick;
     $self->start_timer;
 }
@@ -158,18 +160,29 @@ sub restart {
     my $last_cycle_start_time = $self->last_cycle_start_time;
     die "Can't restart since we have no yet been started and stopped"
         unless $last_cycle_start_time;
-#print "Restarting\n";
     $self->_on_first_timer_tick($last_cycle_start_time);
     $self->start_timer;
 }
 
+# stop is split into _stop and stop: _stop is called when cycle
+# is complete, stop is called when timer is to be stopped in middle
+# of cycle
 sub stop {
     my $self = shift;
-#print "Stopping\n";
+    $self->_stop;
+}
+
+sub _stop {
+    my $self = shift;
+    $self->_reset;
+    $self->stop_timer;
+}
+
+sub _reset {
+    my $self = shift;
     # remember the last cycle start time in case we want to restart
     # and avoid timer drift
     $self->last_cycle_start_time($self->cycle_start_time + $self->total_sleep_computed);
-    $self->stop_timer;
     $self->$_(0) for qw(
         cycle_start_time
         total_sleep_computed
@@ -185,7 +198,6 @@ sub pause {
     my $actual_sleep = $now - $self->cycle_start_time - $self->total_cycle_pause;
     $self->sleep_after_resume( $self->total_sleep_computed - $actual_sleep );
     $self->pause_start_time($now);
-#print "P> now=${\( sprintf('%.3f',EV::time() - $self->cycle_start_time) )}, sleep_after_resume=${\( sprintf('%.3f', $self->sleep_after_resume) )}, actual_sleep=${\( sprintf('%.3f', $actual_sleep) )}  \n";
     $self->stop_timer;
 }
 
@@ -195,7 +207,6 @@ sub resume {
     my $pause_time = $self->now - $self->pause_start_time;
     $self->total_cycle_pause( $self->total_cycle_pause + $pause_time );
     $self->pause_start_time(undef); 
-#print "R> now=${\( sprintf('%.3f',EV::time() - $self->cycle_start_time) )}\n";
     $self->start_timer;
 }
 
