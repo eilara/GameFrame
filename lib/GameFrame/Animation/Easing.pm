@@ -1,41 +1,39 @@
 package GameFrame::Animation::Easing;
 
-# TODO do these have to take $from?
-
 use Moose;
 use Math::Trig;
 
 sub linear {
-    my ($class, $elapsed, $from, $delta) = @_;
-    return $from + $delta * $elapsed;
+    my ($class, $t) = @_;
+    return $t;
 }
 
 sub swing {
-    my ($class, $elapsed, $from, $delta) = @_;
-    return $from + $delta * (-0.5*cos($elapsed*pi)+0.5);
-}
-
-sub in_bounce {
-    my ($class, $elapsed, $from, $delta) = @_;
-    return $from + $delta - $class->out_bounce(1 - $elapsed, 0, $delta);
+    my ($class, $t) = @_;
+    0.5 - 0.5 * cos($t * pi);
 }
 
 sub out_bounce {
-    my ($class, $elapsed, $from, $delta) = @_;
-    return $from + $delta * (
-        $elapsed < (1.0/2.75)? 7.5625 * $elapsed**2:
-        $elapsed < (2.0/2.75)? 7.5625 * ($elapsed-1.500/2.75)**2 + 0.750000:
-        $elapsed < (2.5/2.75)? 7.5625 * ($elapsed-2.250/2.75)**2 + 0.937500:
-                               7.5625 * ($elapsed-2.625/2.75)**2 + 0.984375
-    );
+    my ($class, $t) = @_;
+    my $s = 7.5625;
+    my $p = 2.75;
+    return 
+        $t < 1.0/$p ? $s * $t**2:
+        $t < 2.0/$p ? $s * ($t - 1.500/$p)**2 + 0.75:
+        $t < 2.5/$p ? $s * ($t - 2.250/$p)**2 + 0.9375:
+                      $s * ($t - 2.625/$p)**2 + 0.984375;
+}
+
+sub in_bounce {
+    my ($class, $t) = @_;
+    return 1 - $class->out_bounce(1 - $t);
 }
 
 sub in_out_bounce {
-    my ($class, $elapsed, $from, $delta) = @_;
-    return $from + 0.5 + 0.5 * ($elapsed < 0.5?
-        $class->in_bounce($elapsed*2, 0, $delta):
-        $class->out_bounce($elapsed*2-1, 0, $delta) + $delta
-    );
+    my ($class, $t) = @_;
+    return
+        $t < 0.5? $class->in_bounce(2*$t) / 2:
+                  $class->out_bounce(2*$t - 1) / 2 + 0.5;
 }
 
 1;

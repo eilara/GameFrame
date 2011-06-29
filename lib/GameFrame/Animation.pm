@@ -129,13 +129,15 @@ sub compute_final_value {
 
 sub compute_value_at {
     my ($self, $elapsed) = @_;
-    my $easing  = $self->ease;
-    my @from_to = @{ $self->from_to };
-    @from_to    = reverse(@from_to) if $self->is_reversed_dir;
-    my $time    = $elapsed / $self->duration; # normalized elapsed between 0 and 1
-    my $delta   = $from_to[1] - $from_to[0];
-    my $eased   = Easing->$easing($time, $from_to[0], $delta);
-    return $eased;
+    my $easing      = $self->ease;
+    my @from_to     = @{ $self->from_to };
+    @from_to        = reverse(@from_to) if $self->is_reversed_dir;
+    my ($from, $to) = @from_to;
+    my $time        = $elapsed / $self->duration; # normalized elapsed between 0 and 1
+    my $delta       = $to - $from;
+    my $eased       = Easing->$easing($time);
+    my $value       = $from + $eased * $delta;
+    return $value;
 }
 
 around BUILDARGS => sub {
