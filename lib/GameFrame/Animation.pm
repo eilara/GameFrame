@@ -34,9 +34,9 @@ use MooseX::Types::Moose qw(Bool Num Int Str ArrayRef);
 use GameFrame::MooseX;
 use aliased 'GameFrame::Animation::Timeline';
 use aliased 'GameFrame::Animation::CycleLimit';
-use aliased 'GameFrame::Animation::Easing';
 use aliased 'GameFrame::Animation::Proxy::Factory' => 'ProxyFactory';
 use aliased 'GameFrame::Animation::Proxy';
+use GameFrame::Animation::Easing;
 
 has duration => (is => 'ro', isa => 'Num'     , lazy_build => 1);
 has from_to  => (is => 'ro', isa => 'ArrayRef', lazy_build => 1);
@@ -129,13 +129,14 @@ sub compute_final_value {
 
 sub compute_value_at {
     my ($self, $elapsed) = @_;
-    my $easing      = $self->ease;
+    my $ease        = $self->ease;
     my @from_to     = @{ $self->from_to };
     @from_to        = reverse(@from_to) if $self->is_reversed_dir;
     my ($from, $to) = @from_to;
     my $time        = $elapsed / $self->duration; # normalized elapsed between 0 and 1
     my $delta       = $to - $from;
-    my $eased       = Easing->$easing($time);
+    my $easing      = $GameFrame::Animation::Easing::{$ease};
+    my $eased       = $easing->($time);
     my $value       = $from + $eased * $delta;
     return $value;
 }

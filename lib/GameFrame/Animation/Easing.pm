@@ -4,17 +4,17 @@ use Moose;
 use Math::Trig;
 
 sub linear {
-    my ($class, $t) = @_;
+    my $t = shift;
     return $t;
 }
 
 sub swing {
-    my ($class, $t) = @_;
-    0.5 - 0.5 * cos($t * pi);
+    my $t = shift;
+    return 0.5 - 0.5 * cos($t * pi);
 }
 
 sub out_bounce {
-    my ($class, $t) = @_;
+    my $t = shift;
     my $s = 7.5625;
     my $p = 2.75;
     return 
@@ -25,15 +25,15 @@ sub out_bounce {
 }
 
 sub in_bounce {
-    my ($class, $t) = @_;
-    return 1 - $class->out_bounce(1 - $t);
+    my $t = shift;
+    return 1 - out_bounce(1 - $t);
 }
 
 sub in_out_bounce {
-    my ($class, $t) = @_;
+    my $t = shift;
     return
-        $t < 0.5? $class->in_bounce(2*$t) / 2:
-                  $class->out_bounce(2*$t - 1) / 2 + 0.5;
+        $t < 0.5? in_bounce(2*$t) / 2:
+                  out_bounce(2*$t - 1) / 2 + 0.5;
 }
 
 1;
