@@ -5,7 +5,6 @@ package GameFrame::Animation::Timeline;
 # - wait_for_animation_complete
 # - cycle repeat control / forever
 # - control the direction of time with bounce or is_reversed_dir
-# - TODO control the speed of time with an easing function
 #
 
 use Moose;

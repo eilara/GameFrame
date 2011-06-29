@@ -2,11 +2,11 @@ package GameFrame::Animation;
 
 # an animation is constructed using a spec:
 #
-# - one of the two:
+# - one of the two, from_to or to:
 #   - from_to   - array ref of initial and final values
 #   - to        - final value, 'from' will be computed from starting
 #                 attribute value
-# - one of the two:
+# - one of the two, duration or speed:
 #   - duration  - cycle duration in seconds
 #   - speed     - absolute value of average speed used to compute duration 
 # - target    - target object with the attribute neing animated
@@ -14,16 +14,16 @@ package GameFrame::Animation;
 # - forever   - if true, cycle will repeat forever
 # - repeat    - set to int number of cycles to repeat
 # - bounce    - switch from/to on cycle repeat
-# - curve     - easing function defines progress on path vs. time
+# - ease      - easing function defines progress on path vs. time
 #
 # an animation is built from:
 # - Timeline: for which the animation is the provider
 #   it calls the methods timer_tick and cycle_complete
 #   on this animation
-#   it is create with$ a cycle_limit built from the duration
+#   it is created with a cycle_limit built from the duration
 # - Proxy: the connection to the target, on it we get/set the
-#   animated value, and consult it concerning the animation
-#   resolution for int optimization
+#   animated value, consult it concerning the animation
+#   resolution for int optimization, and get the 'from' value
 #
 # all the animation does is create the 2 correctly, and then
 # convert calls from the timeline into values on the proxy
@@ -34,7 +34,7 @@ use MooseX::Types::Moose qw(Bool Num Int Str ArrayRef);
 use GameFrame::MooseX;
 use aliased 'GameFrame::Animation::Timeline';
 use aliased 'GameFrame::Animation::CycleLimit';
-use aliased 'GameFrame::Animation::Curve';
+use aliased 'GameFrame::Animation::Easing';
 use aliased 'GameFrame::Animation::Proxy::Factory' => 'ProxyFactory';
 use aliased 'GameFrame::Animation::Proxy';
 
@@ -42,7 +42,7 @@ has duration => (is => 'ro', isa => 'Num'     , lazy_build => 1);
 has from_to  => (is => 'ro', isa => 'ArrayRef', lazy_build => 1);
 has speed    => (is => 'ro', isa => 'Num'); # optional instead of duration
 has to       => (is => 'ro');               # optional instead of from_to
-has curve    => (is => 'ro', isa => Str , default => 'linear');
+has ease     => (is => 'ro', isa => Str , default => 'linear');
 
 compose_from Timeline,
     inject => sub {
@@ -129,12 +129,13 @@ sub compute_final_value {
 
 sub compute_value_at {
     my ($self, $elapsed) = @_;
-    my $easing   = $self->curve;
-    my @from_to  = @{ $self->from_to };
-    @from_to     = reverse(@from_to) if $self->is_reversed_dir;
-    my $time     = $elapsed / $self->duration; # normalized elapsed between 0 and 1
-    my $delta    = $from_to[1] - $from_to[0];
-    return Curve->$easing($time, $from_to[0], $delta);
+    my $easing  = $self->ease;
+    my @from_to = @{ $self->from_to };
+    @from_to    = reverse(@from_to) if $self->is_reversed_dir;
+    my $time    = $elapsed / $self->duration; # normalized elapsed between 0 and 1
+    my $delta   = $from_to[1] - $from_to[0];
+    my $eased   = Easing->$easing($time, $from_to[0], $delta);
+    return $eased;
 }
 
 around BUILDARGS => sub {

@@ -2,7 +2,13 @@
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
-# examples of animations
+# animation examples
+
+
+
+# ------------------------------------------------------------------------------
+
+# an animated circle
 
 package GameFrame::eg::AnimatedCircle;
 use Moose;
@@ -10,7 +16,6 @@ use MooseX::Types::Moose qw(Int);
 
 # add Int constraint to turn on integer optimization in tweening
 has radius => (is => 'rw', isa => Int, default  => 1);
-
 has spec   => (is => 'ro', required => 1); # animation spec
 
 with qw(
@@ -28,8 +33,6 @@ sub paint {
     my $self = shift;
     $self->draw_circle($self->xy, $self->radius, 0xFFFFFFFF, 1);
 }
-
-# ------------------------------------------------------------------------------
 
 package main;
 use strict;
@@ -118,7 +121,7 @@ GameFrame::eg::AnimatedCircle->new(
     },
 );
 
-# default easing function is linear, set easing function with 'curve' key
+# default easing function is linear, set easing function with 'ease' key
 GameFrame::eg::AnimatedCircle->new(
     xy     => [25, 125],
     radius => 25,
@@ -128,7 +131,7 @@ GameFrame::eg::AnimatedCircle->new(
         to        => 615,
         bounce    => 1,
         forever   => 1,
-        curve     => 'swing',
+        ease      => 'swing',
     },
 );
 
@@ -142,13 +145,13 @@ GameFrame::eg::AnimatedCircle->new(
         to        => 615,
         bounce    => 1,
         forever   => 1,
-        curve     => 'in_out_bounce',
+        ease      => 'in_out_bounce',
     },
 );
-
 
 $app->run;
 
 __END__
+
 
 

@@ -1,4 +1,4 @@
-package GameFrame::Animation::Curve;
+package GameFrame::Animation::Easing;
 
 # TODO do these have to take $from?
 
