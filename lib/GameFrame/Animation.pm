@@ -40,8 +40,8 @@ use GameFrame::Animation::Easing;
 
 has duration => (is => 'ro', isa => 'Num'     , lazy_build => 1);
 has from_to  => (is => 'ro', isa => 'ArrayRef', lazy_build => 1);
-has speed    => (is => 'ro', isa => 'Num'); # optional instead of duration
-has to       => (is => 'ro');               # optional instead of from_to
+has speed    => (is => 'ro', isa => 'Num'     , lazy_build => 1); # optional instead of duration
+has to       => (is => 'ro');                                     # optional instead of from_to
 has ease     => (is => 'ro', isa => Str , default => 'linear');
 
 compose_from Timeline,
@@ -51,7 +51,7 @@ compose_from Timeline,
         return (
             cycle_limit => CycleLimit->time_period($self->duration),
             provider    => $self,
-            $self->_compute_timer_sleep,
+            $self->compute_timer_sleep($self->speed),
         );
     },
     has => {handles => {
@@ -76,24 +76,15 @@ compose_from Proxy,
 with 'GameFrame::Role::Animation';
 
 sub _build_duration { # if duration was not given we calculate it from speed
-    my $self = shift;
-    my $speed = $self->speed;
-    die "Can't start animation with no speed or duration specified"
-        unless $speed;
+    my $self     = shift;
+    my $speed    = $self->speed;
     my @from_to  = @{ $self->from_to };
     my $delta    = $from_to[1] - $from_to[0];
     my $duration = abs($delta) / $speed;
     return $duration;
 }
 
-sub _build_from_to { # if from_to was not given we compute 'from'
-    my $self = shift;
-    my $to = $self->to;
-    die "Can't compute from_to if 'to' is not given" unless defined $to;
-    return [$self->get_init_value, $to];
-}
-
-sub _compute_speed {
+sub _build_speed {
     my $self     = shift;
     my @from_to  = @{ $self->from_to };
     my $delta    = $from_to[1] - $from_to[0];
@@ -101,9 +92,11 @@ sub _compute_speed {
     return $speed;
 }
 
-sub _compute_timer_sleep {
+sub _build_from_to { # if from_to was not given we compute 'from'
     my $self = shift;
-    return $self->compute_timer_sleep($self->_compute_speed);
+    my $to = $self->to;
+    die "Can't compute from_to if 'to' is not given" unless defined $to;
+    return [$self->get_init_value, $to];
 }
 
 sub timer_tick {
@@ -159,9 +152,12 @@ around BUILDARGS => sub {
             my $val = delete $args{$att};
             push @{$args{timeline_args}}, $att, $val;
         }
-     }
+    }
 
-     return $class->$orig(%args);
+    die "Must specify 'speed' or 'duration'"
+        unless $args{speed} || $args{duration};
+
+    return $class->$orig(%args);
 };
 
 1;
