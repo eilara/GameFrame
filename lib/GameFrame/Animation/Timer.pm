@@ -65,14 +65,15 @@ has clock => (is => 'ro', isa => Clock, required => 1,
 has timer => (is => 'ro', lazy_build => 1, handles => {
     start_timer     => 'start',
     stop_timer      => 'stop',
+    set_timer       => 'set',
     is_timer_active => 'is_active',
 });
 
 # when did current cycle start
 has cycle_start_time => (is => 'rw');
 
-# when did the last cycle start, in case we are restarting a cycle
-has last_cycle_start_time => (is => 'rw');
+# when did the last cycle complete, in case we are restarting a cycle
+has last_cycle_complete_time => (is => 'rw');
 
 # sum of all sleep performed so far in cycle
 has total_sleep_computed => (is => 'rw', default => 0);
@@ -90,10 +91,10 @@ has total_cycle_pause => (is => 'rw', default => 0);
 sub _build_timer {
     my $self = shift;
     weaken $self;
-    return $self->build_periodic_timer(
-       sub { $self->_on_compute_sleep },
-       sub { $self->_on_timer_tick },
-    );
+    # build a timer with dummy $start_time and $timer_sleep, which we set
+    # before start()
+    return $self->build_periodic_timer
+        (0, 1, sub { $self->_on_timer_tick });
 }
 
 # if cycle sleep is given, default it, in case it is too small
@@ -126,17 +127,19 @@ sub _on_compute_sleep {
 
 sub _on_first_timer_tick {
     my ($self, $cycle_start_time) = @_;
-    $self->cycle_start_time($cycle_start_time || $self->now);
+    $cycle_start_time ||= $self->now;
+    $self->cycle_start_time($cycle_start_time);
+    $self->set_timer($cycle_start_time, $self->cycle_sleep, 0);
     $self->total_sleep_computed(0);
-    $self->timer_tick(0);
 }
 
 sub _on_timer_tick {
     my $self = shift;
     my $elapsed = $self->now - $self->cycle_start_time;
+    $self->total_sleep_computed($elapsed);
 
-    if ($self->is_cycle_complete($elapsed)) {
-        $self->_stop;
+    if (my $ideal_cycle_duration = $self->is_cycle_complete($elapsed)) {
+        $self->_stop($ideal_cycle_duration);
         $self->cycle_complete;
         $self->_on_final_timer_tick;
         return;
@@ -147,21 +150,21 @@ sub _on_timer_tick {
 
 sub _on_final_timer_tick {}
 
-# TODO should take optional start time to avoid drift
-#      in animation chaining, or when parallel animating
 sub start {
-    my $self = shift;
-    $self->_on_first_timer_tick;
+    my ($self, $cycle_start_time) = @_;
+    $self->_on_first_timer_tick($cycle_start_time);
     $self->start_timer;
+    $self->timer_tick(0);
 }
 
 sub restart {
     my $self = shift;
-    my $last_cycle_start_time = $self->last_cycle_start_time;
+    my $last_cycle_complete_time = $self->last_cycle_complete_time;
     die "Can't restart since we have no yet been started and stopped"
-        unless $last_cycle_start_time;
-    $self->_on_first_timer_tick($last_cycle_start_time);
+        unless $last_cycle_complete_time;
+    $self->_on_first_timer_tick($last_cycle_complete_time);
     $self->start_timer;
+    $self->timer_tick(0);
 }
 
 # stop is split into _stop and stop: _stop is called when cycle
@@ -173,28 +176,26 @@ sub stop {
 }
 
 sub _stop {
-    my $self = shift;
-    $self->_reset;
-    $self->stop_timer;
-}
-
-sub _reset {
-    my $self = shift;
+    my ($self, $ideal_cycle_duration) = @_;
     # remember the last cycle start time in case we want to restart
     # and avoid timer drift
-    $self->last_cycle_start_time($self->cycle_start_time + $self->total_sleep_computed);
+    $self->last_cycle_complete_time(
+        $self->cycle_start_time +
+        ($ideal_cycle_duration || $self->total_sleep_computed)
+    );
     $self->$_(0) for qw(
         cycle_start_time
         total_sleep_computed
         sleep_after_resume
         total_cycle_pause
     );
+    $self->stop_timer;
 }
 
 sub pause {
-    my $self = shift;
+    my ($self, $pause_start_time) = @_;
     return unless $self->is_timer_active;
-    my $now = $self->now;
+    my $now = $pause_start_time || $self->now;
     my $actual_sleep = $now - $self->cycle_start_time - $self->total_cycle_pause;
     $self->sleep_after_resume( $self->total_sleep_computed - $actual_sleep );
     $self->pause_start_time($now);
@@ -202,9 +203,10 @@ sub pause {
 }
 
 sub resume {
-    my $self = shift;
+    my ($self, $resume_time) = @_;
     return if $self->is_timer_active;
-    my $pause_time = $self->now - $self->pause_start_time;
+    my $now = $resume_time || $self->now;
+    my $pause_time = $now - $self->pause_start_time;
     $self->total_cycle_pause( $self->total_cycle_pause + $pause_time );
     $self->pause_start_time(undef); 
     $self->start_timer;

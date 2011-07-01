@@ -56,6 +56,12 @@ GameFrame::eg::AnimatedCircle->new(
     },
 );
 
+#$app->run;
+#
+#__END__
+#
+#
+#
 # or animate twice, default repeat is once
 # note this time the animation goes the other way: 50 to 1
 GameFrame::eg::AnimatedCircle->new(
