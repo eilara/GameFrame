@@ -2,13 +2,9 @@ package GameFrame::Animation;
 
 # an animation is constructed using a spec:
 #
-# - one of the two, from_to or to:
-#   - from_to   - array ref of initial and final values
-#   - to        - final value, 'from' will be computed from starting
-#                 attribute value
-# - one of the two, duration or speed:
-#   - duration  - cycle duration in seconds
-#   - speed     - absolute value of average speed used to compute duration 
+# - to        - final value, 'from' will be computed from starting
+#               attribute value
+# - duration  - cycle duration in seconds
 # - target    - target object with the attribute neing animated
 # - attribute - attribute name on the target
 # - forever   - if true, cycle will repeat forever
@@ -38,20 +34,21 @@ use aliased 'GameFrame::Animation::Proxy::Factory' => 'ProxyFactory';
 use aliased 'GameFrame::Animation::Proxy';
 use GameFrame::Animation::Easing;
 
-has duration => (is => 'ro', isa => 'Num'     , lazy_build => 1);
-has from_to  => (is => 'ro', isa => 'ArrayRef', lazy_build => 1);
-has speed    => (is => 'ro', isa => 'Num'     , lazy_build => 1); # optional instead of duration
-has to       => (is => 'ro');                                     # optional instead of from_to
-has ease     => (is => 'ro', isa => Str , default => 'linear');
+has to       => (is => 'ro', required => 1);
+has from     => (is => 'ro', lazy_build => 1);
+has duration => (is => 'ro', isa => Num, required => 1);
+has ease     => (is => 'ro', isa => Str, default => 'linear');
 
 compose_from Timeline,
     inject => sub {
         my $self = shift;
         weaken $self; # don't want args to hold strong ref to self
+        my $delta = $self->to - $self->from;
+        my $speed = abs($delta) / $self->duration;
         return (
             cycle_limit => CycleLimit->time_period($self->duration),
             provider    => $self,
-            $self->compute_timer_sleep($self->speed),
+            $self->compute_timer_sleep($speed),
         );
     },
     has => {handles => {
@@ -75,28 +72,9 @@ compose_from Proxy,
 
 with 'GameFrame::Role::Animation';
 
-sub _build_duration { # if duration was not given we calculate it from speed
-    my $self     = shift;
-    my $speed    = $self->speed;
-    my @from_to  = @{ $self->from_to };
-    my $delta    = $from_to[1] - $from_to[0];
-    my $duration = abs($delta) / $speed;
-    return $duration;
-}
-
-sub _build_speed {
-    my $self     = shift;
-    my @from_to  = @{ $self->from_to };
-    my $delta    = $from_to[1] - $from_to[0];
-    my $speed    = abs($delta) / $self->duration;
-    return $speed;
-}
-
-sub _build_from_to { # if from_to was not given we compute 'from'
+sub _build_from {
     my $self = shift;
-    my $to = $self->to;
-    die "Can't compute from_to if 'to' is not given" unless defined $to;
-    return [$self->get_init_value, $to];
+    return $self->get_init_value;
 }
 
 sub timer_tick {
@@ -117,19 +95,21 @@ sub set_attribute_final_value {
 
 sub compute_final_value {
     my $self = shift;
-    return $self->from_to->[$self->is_reversed_dir? 0: 1];
+    my $final = $self->is_reversed_dir? 'from': 'to';
+    return $self->$final;
 }
 
 sub compute_value_at {
     my ($self, $elapsed) = @_;
     my $ease        = $self->ease;
-    my @from_to     = @{ $self->from_to };
-    @from_to        = reverse(@from_to) if $self->is_reversed_dir;
-    my ($from, $to) = @from_to;
     my $time        = $elapsed / $self->duration; # normalized elapsed between 0 and 1
-    my $delta       = $to - $from;
     my $easing      = $GameFrame::Animation::Easing::{$ease};
     my $eased       = $easing->($time);
+
+    my @from_to     = ($self->from, $self->to);
+    @from_to        = reverse(@from_to) if $self->is_reversed_dir;
+    my ($from, $to) = @from_to;
+    my $delta       = $to - $from;
     my $value       = $from + $eased * $delta;
     return $value;
 }
@@ -137,6 +117,7 @@ sub compute_value_at {
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
 
+    # fix proxy args
     $args{proxy_args} = [
         target    => delete($args{target}),
         attribute => delete($args{attribute}),
@@ -146,6 +127,7 @@ around BUILDARGS => sub {
     $args{proxy_class} = ProxyFactory->find_proxy
         (@{ $args{proxy_args} });
 
+    # fix timeline args
     $args{timeline_args} = [ $args{timeline_args} || () ];
     for my $att (qw(repeat bounce forever)) {
         if (exists $args{$att}) {
@@ -153,9 +135,6 @@ around BUILDARGS => sub {
             push @{$args{timeline_args}}, $att, $val;
         }
     }
-
-    die "Must specify 'speed' or 'duration'"
-        unless $args{speed} || $args{duration};
 
     return $class->$orig(%args);
 };

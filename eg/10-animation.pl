@@ -51,7 +51,7 @@ GameFrame::eg::AnimatedCircle->new(
     spec => {
         attribute => 'radius',
         duration  => 1,
-        from_to   => [1, 50],
+        to        => 50,
         forever   => 1,
     },
 );
@@ -65,36 +65,34 @@ GameFrame::eg::AnimatedCircle->new(
 # or animate twice, default repeat is once
 # note this time the animation goes the other way: 50 to 1
 GameFrame::eg::AnimatedCircle->new(
-    xy   => [150, 50],
-    spec => {
+    xy     => [150, 50],
+    radius => 50,
+    spec   => {
         attribute => 'radius',
         duration  => 2,
-        from_to   => [50, 1],
+        to        => 1,
         repeat    => 2,
     },
 );
 
-# tell it to bounce, auto-reversing itself, and use speed to indicate
-# absolute value of average speed, instead of duration
-# radius changing in 20/sec will move 40 in 2 seconds, so this is the
-# same as setting duration of 2
+# tell it to bounce, auto-reversing itself
 GameFrame::eg::AnimatedCircle->new(
-    xy   => [250, 50],
-    spec => {
+    xy     => [250, 50],
+    spec   => {
         attribute => 'radius',
-        speed     => 20,
-        from_to   => [10, 50],
+        duration  => 2,
+        from      => 10,
+        to        => 50,
         bounce    => 1,
         forever   => 1,
     },
 );
 
 # animate more than one attribute at once
-# note no need to set from_to, you can just specify 'to' and from
-# will be computed from the target
 GameFrame::eg::AnimatedCircle->new(
-    xy   => [450, 50],
-    spec => [
+    xy      => [450, 50],
+    radius  => 1,
+    spec    => [
         {
             attribute => 'radius',
             duration  => 2,
@@ -114,7 +112,7 @@ GameFrame::eg::AnimatedCircle->new(
 
 # animate 2D attributes, e.g. xy_vec
 # you could animate each property in 1D in parallel but this is more flexible
-# note you must specify the from_to as vectors not arrays
+# note you must specify the 'to' as vectors not arrays
 GameFrame::eg::AnimatedCircle->new(
     xy     => [520, 20],
     radius => 20,
@@ -160,4 +158,16 @@ $app->run;
 __END__
 
 
+GameFrame::eg::AnimatedCircle->new(
+    xy     => [520, 20],
+    radius => 20,
+    spec   => {
+        attribute  => 'xy_vec',
+        duration   => 2,
+        bounce     => 1,
+        forever    => 1,
+        trajectory => {to => V(620, 80)},
+        ease      => 'in_out_bounce',
+    },
+);
 
