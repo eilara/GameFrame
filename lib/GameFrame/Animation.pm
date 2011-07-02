@@ -31,6 +31,7 @@ use GameFrame::MooseX;
 use aliased 'GameFrame::Animation::Timeline';
 use aliased 'GameFrame::Animation::CycleLimit';
 use aliased 'GameFrame::Animation::Proxy::Factory' => 'ProxyFactory';
+use aliased 'GameFrame::Animation::Curve::Linear'  => 'Curve';
 use aliased 'GameFrame::Animation::Proxy';
 use GameFrame::Animation::Easing;
 
@@ -43,8 +44,7 @@ compose_from Timeline,
     inject => sub {
         my $self = shift;
         weaken $self; # don't want args to hold strong ref to self
-        my $delta = $self->to - $self->from;
-        my $speed = abs($delta) / $self->duration;
+        my $speed = $self->curve_length / $self->duration;
         return (
             cycle_limit => CycleLimit->time_period($self->duration),
             provider    => $self,
@@ -70,6 +70,20 @@ compose_from Proxy,
         compute_timer_sleep
     )]};
 
+compose_from Curve,
+    inject => sub {
+        my $self = shift;
+        return (
+            from => $self->from,
+            to   => $self->to,
+        );
+    },
+    has => {handles => [qw(
+        solve_curve
+        solve_edge_value
+        curve_length
+    )]};
+
 with 'GameFrame::Role::Animation';
 
 sub _build_from {
@@ -85,32 +99,17 @@ sub timer_tick {
 
 sub cycle_complete {
     my $self = shift;
-    $self->set_attribute_final_value;
-}
-
-sub set_attribute_final_value {
-    my $self = shift;
-    $self->set_attribute_value($self->compute_final_value);
-}
-
-sub compute_final_value {
-    my $self = shift;
-    my $final = $self->is_reversed_dir? 'from': 'to';
-    return $self->$final;
+    $self->set_attribute_value($self->solve_edge_value);
 }
 
 sub compute_value_at {
     my ($self, $elapsed) = @_;
-    my $ease        = $self->ease;
-    my $time        = $elapsed / $self->duration; # normalized elapsed between 0 and 1
-    my $easing      = $GameFrame::Animation::Easing::{$ease};
-    my $eased       = $easing->($time);
-
-    my @from_to     = ($self->from, $self->to);
-    @from_to        = reverse(@from_to) if $self->is_reversed_dir;
-    my ($from, $to) = @from_to;
-    my $delta       = $to - $from;
-    my $value       = $from + $eased * $delta;
+    my $ease   = $self->ease;
+    my $time   = $elapsed / $self->duration; # normalized elapsed between 0 and 1
+    my $easing = $GameFrame::Animation::Easing::{$ease};
+    my $eased  = $easing->($time);
+    $eased     = 1 - $eased if $self->is_reversed_dir;
+    my $value  = $self->solve_curve($eased);
     return $value;
 }
 

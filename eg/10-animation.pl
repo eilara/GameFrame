@@ -159,15 +159,15 @@ __END__
 
 
 GameFrame::eg::AnimatedCircle->new(
-    xy     => [520, 20],
-    radius => 20,
+    xy     => [10, 275],
+    radius => 10,
     spec   => {
-        attribute  => 'xy_vec',
-        duration   => 2,
-        bounce     => 1,
-        forever    => 1,
-        trajectory => {to => V(620, 80)},
+        attribute => 'xy_vec',
+        duration  => 2,
+        bounce    => 1,
+        forever   => 1,
         ease      => 'in_out_bounce',
+        curve     => {to => V(630, 275)},
     },
 );
 
