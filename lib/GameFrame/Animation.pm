@@ -35,7 +35,6 @@ use aliased 'GameFrame::Animation::Curve::Linear'  => 'Curve';
 use aliased 'GameFrame::Animation::Proxy';
 use GameFrame::Animation::Easing;
 
-has to       => (is => 'ro', required => 1);
 has from     => (is => 'ro', lazy_build => 1);
 has duration => (is => 'ro', isa => Num, required => 1);
 has ease     => (is => 'ro', isa => Str, default => 'linear');
@@ -71,11 +70,11 @@ compose_from Proxy,
     )]};
 
 compose_from Curve,
+    prefix => 'curve',
     inject => sub {
         my $self = shift;
         return (
             from => $self->from,
-            to   => $self->to,
         );
     },
     has => {handles => [qw(
@@ -120,19 +119,26 @@ around BUILDARGS => sub {
     $args{proxy_args} = [
         target    => delete($args{target}),
         attribute => delete($args{attribute}),
-        ($args{proxy_args} || ()),
+        @{ $args{proxy_args} || []},
     ];
 
     $args{proxy_class} = ProxyFactory->find_proxy
         (@{ $args{proxy_args} });
 
     # fix timeline args
-    $args{timeline_args} = [ $args{timeline_args} || () ];
+    $args{timeline_args} = $args{timeline_args} || [];
     for my $att (qw(repeat bounce forever)) {
         if (exists $args{$att}) {
             my $val = delete $args{$att};
             push @{$args{timeline_args}}, $att, $val;
         }
+    }
+    
+    # fix curve args
+#    $args{curve_class} ||= 'linear';
+    $args{curve_args} = $args{curve_args} || [];
+    if (my $to = delete($args{to})) {
+        push @{$args{curve_args}}, to => $to;
     }
 
     return $class->$orig(%args);
