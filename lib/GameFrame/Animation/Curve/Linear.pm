@@ -1,7 +1,6 @@
 package GameFrame::Animation::Curve::Linear;
 
 use Moose;
-use MooseX::Types::Moose qw(Bool Num Int Str ArrayRef);
 
 has [qw(from to)] => (is => 'ro', required => 1);
 

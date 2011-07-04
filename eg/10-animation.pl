@@ -153,22 +153,23 @@ GameFrame::eg::AnimatedCircle->new(
     },
 );
 
-$app->run;
-
-__END__
-
-
 GameFrame::eg::AnimatedCircle->new(
-    xy     => [10, 275],
+    xy     => [10, 295],
     radius => 10,
     spec   => {
         attribute  => 'xy_vec',
-        duration   => 2,
+        duration   => 8,
+        to         => V(630, 295),
         bounce     => 1,
         forever    => 1,
         ease       => 'in_out_bounce',
         curve      => 'sine',
-        curve_args => [amp => 15, freq => 50],
+        curve_args => [amp => 30, freq => 10],
     },
 );
+
+$app->run;
+
+__END__
+
 

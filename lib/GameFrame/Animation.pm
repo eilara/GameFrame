@@ -2,15 +2,19 @@ package GameFrame::Animation;
 
 # an animation is constructed using a spec:
 #
-# - to        - final value, 'from' will be computed from starting
-#               attribute value
-# - duration  - cycle duration in seconds
-# - target    - target object with the attribute neing animated
-# - attribute - attribute name on the target
-# - forever   - if true, cycle will repeat forever
-# - repeat    - set to int number of cycles to repeat
-# - bounce    - switch from/to on cycle repeat
-# - ease      - easing function defines progress on path vs. time
+# - to         - final value, 'from' will be computed from starting
+#                attribute value
+# - duration   - cycle duration in seconds
+# - target     - target object with the attribute neing animated
+# - attribute  - attribute name on the target
+# - forever    - if true, cycle will repeat forever
+# - repeat     - set to int number of cycles to repeat
+# - bounce     - switch from/to on cycle repeat
+# - ease       - easing function defines progress on path vs. time
+# - curve      - for >1D animations (e.g. xy of sprite) the name
+#                of the curve class that will set the trajectory
+#                for the animation
+# - curve_args - any arguments for the curve
 #
 # an animation is built from:
 # - Timeline: for which the animation is the provider
@@ -98,7 +102,11 @@ sub timer_tick {
 
 sub cycle_complete {
     my $self = shift;
-    $self->set_attribute_value($self->solve_edge_value);
+    $self->set_attribute_value(
+        $self->solve_edge_value(
+            $self->is_reversed_dir? 0: 1
+        )
+    );
 }
 
 sub compute_value_at {
@@ -135,7 +143,10 @@ around BUILDARGS => sub {
     }
     
     # fix curve args
-#    $args{curve_class} ||= 'linear';
+    my $curve = delete($args{curve}) || 'linear';
+    $curve = join '', map { ucfirst } split(/_/, $curve);
+    $args{curve_class} = "GameFrame::Animation::Curve::$curve";
+
     $args{curve_args} = $args{curve_args} || [];
     if (my $to = delete($args{to})) {
         push @{$args{curve_args}}, to => $to;

@@ -67,6 +67,7 @@ with 'MooseX::Role::Listenable' => {event => 'sdl_event'};
 
 sub BUILD {
     my $self = shift;
+
     # must be called before creating paintables or sdl event handlers
     GameFrame::Role::Paintable::Set_SDL_Paint_Observable($self);
     GameFrame::Role::Paintable::Set_SDL_Main_Surface($self->sdl);
@@ -85,7 +86,9 @@ sub run {
     $c->run; # blocks
 }
 
+#use EV; my $t = EV::time;
 sub sdl_paint_handler {
+#print ((EV::time - $t)."\n"); $t=EV::time;
     my $self = shift;
     my $c = $self->bg_color;
     $self->sdl->draw_rect(undef, $c) if defined $c;
