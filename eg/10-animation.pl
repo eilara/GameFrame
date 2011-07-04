@@ -14,6 +14,7 @@ use MooseX::Types::Moose qw(Int);
 
 # add Int constraint to turn on integer optimization in tweening
 has radius => (is => 'rw', isa => Int, default  => 1);
+has color  => (is => 'rw', isa => Int, default  => 0xFFFFFFFF);
 has spec   => (is => 'ro', required => 1); # animation spec
 
 with qw(
@@ -29,7 +30,7 @@ sub start {
 
 sub paint {
     my $self = shift;
-    $self->draw_circle($self->xy, $self->radius, 0xFFFFFFFF, 1);
+    $self->draw_circle_filled($self->xy, $self->radius, $self->color, 1);
 }
 
 # ------------------------------------------------------------------------------
