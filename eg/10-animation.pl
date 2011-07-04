@@ -4,8 +4,6 @@ use lib "$Bin/../lib";
 
 # animation examples
 
-
-
 # ------------------------------------------------------------------------------
 
 # an animated circle
@@ -34,11 +32,15 @@ sub paint {
     $self->draw_circle($self->xy, $self->radius, 0xFFFFFFFF, 1);
 }
 
+# ------------------------------------------------------------------------------
+
 package main;
 use strict;
 use warnings;
 use FindBin qw($Bin);
 use aliased 'GameFrame::App';
+
+use Math::Trig;         # for pi()
 use Math::Vector::Real; # for the V() constructor
 
 my $app = App->new(
@@ -56,12 +58,6 @@ GameFrame::eg::AnimatedCircle->new(
     },
 );
 
-#$app->run;
-#
-#__END__
-#
-#
-#
 # or animate twice, default repeat is once
 # note this time the animation goes the other way: 50 to 1
 GameFrame::eg::AnimatedCircle->new(
@@ -153,18 +149,41 @@ GameFrame::eg::AnimatedCircle->new(
     },
 );
 
+# xy_vec property is a 2D vector
+# you can set 'curve' on the animation to animate the xy
+# on some trajectory
+# here the circle is moved in the same linear path as 
+# the last example, but we add a sine curve to it, whith
+# a frequency of 2 per duration of 2 seconds (a period of
+# 1 second), and an amplitude of 50 pixels
 GameFrame::eg::AnimatedCircle->new(
-    xy     => [10, 295],
+    xy     => [10, 300],
     radius => 10,
     spec   => {
         attribute  => 'xy_vec',
-        duration   => 8,
-        to         => V(630, 295),
+        duration   => 2,
+        to         => V(630, 300),
+        bounce     => 1,
+        forever    => 1,
+        ease       => 'swing',
+        curve      => 'sine',
+        curve_args => [amp => 50, freq => 2],
+    },
+);
+
+# another useful curve is the circle, the xy value is used
+# as the center of the circle
+GameFrame::eg::AnimatedCircle->new(
+    xy     => [60, 420],
+    radius => 10,
+    spec   => {
+        attribute  => 'xy_vec',
+        duration   => 4,
         bounce     => 1,
         forever    => 1,
         ease       => 'in_out_bounce',
-        curve      => 'sine',
-        curve_args => [amp => 30, freq => 10],
+        curve      => 'circle',
+        curve_args => [radius => 50, begin => 2*pi*(1/8), end => 2*pi*(7/8)],
     },
 );
 

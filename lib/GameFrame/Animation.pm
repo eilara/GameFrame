@@ -35,8 +35,10 @@ use GameFrame::MooseX;
 use aliased 'GameFrame::Animation::Timeline';
 use aliased 'GameFrame::Animation::CycleLimit';
 use aliased 'GameFrame::Animation::Proxy::Factory' => 'ProxyFactory';
-use aliased 'GameFrame::Animation::Curve::Linear'  => 'Curve';
 use aliased 'GameFrame::Animation::Proxy';
+use aliased 'GameFrame::Animation::Curve' => 'Curve';
+use GameFrame::Animation::Curve::Linear;
+use GameFrame::Animation::Curve::Circle;
 use GameFrame::Animation::Easing;
 
 has from     => (is => 'ro', lazy_build => 1);

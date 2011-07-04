@@ -2,6 +2,8 @@ package GameFrame::Animation::Curve::Linear;
 
 use Moose;
 
+extends 'GameFrame::Animation::Curve';
+
 has [qw(from to)] => (is => 'ro', required => 1);
 
 sub _build_from {
