@@ -39,6 +39,7 @@ use aliased 'GameFrame::Animation::Proxy';
 use aliased 'GameFrame::Animation::Curve' => 'Curve';
 use GameFrame::Animation::Curve::Linear;
 use GameFrame::Animation::Curve::Circle;
+use GameFrame::Animation::Curve::Spiral;
 use GameFrame::Animation::Easing;
 
 has from     => (is => 'ro', lazy_build => 1);

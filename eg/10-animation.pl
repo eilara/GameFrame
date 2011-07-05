@@ -188,6 +188,27 @@ GameFrame::eg::AnimatedCircle->new(
     },
 );
 
+# a spiral is a growing circle
+GameFrame::eg::AnimatedCircle->new(
+    xy     => [180, 415],
+    radius => 5,
+    spec   => {
+        attribute  => 'xy_vec',
+        duration   => 4,
+        bounce     => 1,
+        forever    => 1,
+        ease       => 'swing',
+        curve      => 'spiral',
+        curve_args => [
+            begin_radius   => 1,
+            end_radius     => 60,
+            rotation_count => 3,
+            begin_angle    => pi,
+        ],
+    },
+);
+
+
 $app->run;
 
 __END__
