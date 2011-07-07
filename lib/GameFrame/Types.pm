@@ -2,11 +2,11 @@ package GameFrame::Types;
 
 use strict;
 use warnings;
+use Math::Vector::Real;
 use MooseX::Types -declare => [qw(
     Vector2D
 )];
 use MooseX::Types::Moose qw(ArrayRef);
-use Math::Vector::Real;
 
 subtype Vector2D, as 'Math::Vector::Real';
 

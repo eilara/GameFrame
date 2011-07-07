@@ -1,5 +1,7 @@
 package GameFrame::Animation::Proxy::Vector;
 
+# TODO this is actually an int vector
+
 use Moose;
 
 extends 'GameFrame::Animation::Proxy';

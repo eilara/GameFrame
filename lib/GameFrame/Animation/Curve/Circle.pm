@@ -1,5 +1,7 @@
 package GameFrame::Animation::Curve::Circle;
 
+# TODO make work in nD
+
 use Moose;
 use Math::Trig;
 use Math::Vector::Real;
@@ -22,7 +24,8 @@ sub solve_curve {
     my $end   = $self->end;
     my $delta = $end - $begin;
     my $angle = $begin + $delta * $elapsed;
-    my $value = $self->from + $self->radius * V(cos($angle), sin($angle));
+    my $from  = $self->from;
+    my $value = $from + $self->radius * V(cos($angle), sin($angle));
     return $value;
 }
 

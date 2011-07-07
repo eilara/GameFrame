@@ -4,7 +4,7 @@ use Moose;
 use Math::Trig;
 use Math::Vector::Real;
 
-# TODO support 3D
+# TODO support nD
 
 has [qw(amp freq)] => (is => 'rw', required => 1);
 has normal => (is => 'rw');

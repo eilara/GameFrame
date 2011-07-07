@@ -31,6 +31,7 @@ package GameFrame::Animation;
 use Moose;
 use Scalar::Util qw(weaken);
 use MooseX::Types::Moose qw(Bool Num Int Str ArrayRef);
+use Math::Vector::Real;
 use GameFrame::MooseX;
 use aliased 'GameFrame::Animation::Timeline';
 use aliased 'GameFrame::Animation::CycleLimit';
@@ -152,6 +153,7 @@ around BUILDARGS => sub {
 
     $args{curve_args} = $args{curve_args} || [];
     if (my $to = delete($args{to})) {
+        $to = V(@$to) if ref($to) eq 'ARRAY'; # TODO do the same for 'from'
         push @{$args{curve_args}}, to => $to;
     }
 

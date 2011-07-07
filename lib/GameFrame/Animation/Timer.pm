@@ -108,23 +108,6 @@ around BUILDARGS => sub {
 
 sub DEMOLISH { shift->stop_timer }
 
-sub _on_compute_sleep {
-    my $self = shift;
-    my $elapsed = $self->total_sleep_computed; # elapsed on the timer tick that happens because of this computed sleep
-    my $next_elapsed = $elapsed;
-
-    if ($self->sleep_after_resume) {
-        $self->sleep_after_resume(undef);
-    } else {
-        $next_elapsed += $self->cycle_sleep;
-    }
-
-    my $next_elapsed_and_pause = $next_elapsed + $self->total_cycle_pause;
-    $self->total_sleep_computed($next_elapsed);
-#print "S> now=${\( sprintf('%.3f',EV::time() - $self->cycle_start_time) )}, next_elapsed=${\( sprintf('%.3f', $next_elapsed) )}, next_elapsed_and_pause=${\( sprintf('%.3f', $next_elapsed_and_pause) )}  \n";
-    return $self->cycle_start_time + $next_elapsed_and_pause;
-}
-
 sub _on_first_timer_tick {
     my ($self, $cycle_start_time) = @_;
     $cycle_start_time ||= $self->now;
