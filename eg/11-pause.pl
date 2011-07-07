@@ -8,19 +8,19 @@ use lib "$Bin/../lib";
 
 package GameFrame::eg::PauseAnimatedCircle;
 use Moose;
+use MooseX::Types::Moose qw(Int);
 use aliased 'GameFrame::Role::Animation';
 
-has radius => (is => 'rw', default    => 1);
-
-has animation => (is => 'ro', lazy_build => 1, handles => Animation);
+has radius    => (is => 'rw', isa => Int  , default  => 1);
+has animation => (is => 'ro', isa => Animation, lazy_build => 1, handles => Animation);
 
 sub _build_animation {
     shift->create_animation({
         attribute => 'radius',
         duration  => 3,
-        from_to   => [10.4,12.5],
-#        bounce    => 1,
-#        forever   => 1,
+        to        => 100,
+        bounce    => 1,
+        forever   => 1,
     });
 }
 

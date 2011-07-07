@@ -81,9 +81,10 @@ has total_sleep_computed => (is => 'rw', default => 0);
 # when was last pause started, if in pause
 has pause_start_time => (is => 'rw');
 
+# TODO support for big sleep cycles, sleep_after_resume
 # how much to sleep at 1st tick after resume, if paused and resumed in
 # middle of tick
-has sleep_after_resume => (is => 'rw', default => 0);
+# has sleep_after_resume => (is => 'rw', default => 0);
 
 # how much time was paused in this cycle
 has total_cycle_pause => (is => 'rw', default => 0);
@@ -118,7 +119,9 @@ sub _on_first_timer_tick {
 
 sub _on_timer_tick {
     my $self = shift;
-    my $elapsed = $self->now - $self->cycle_start_time;
+    my $elapsed = $self->now -
+                  $self->cycle_start_time -
+                  $self->total_cycle_pause;
     $self->total_sleep_computed($elapsed);
 
     if (my $ideal_cycle_duration = $self->is_cycle_complete($elapsed)) {
@@ -164,25 +167,37 @@ sub _stop {
     # and avoid timer drift
     $self->last_cycle_complete_time(
         $self->cycle_start_time +
-        ($ideal_cycle_duration || $self->total_sleep_computed)
+        ($ideal_cycle_duration || $self->total_sleep_computed) +
+        $self->total_cycle_pause
     );
     $self->$_(0) for qw(
         cycle_start_time
         total_sleep_computed
-        sleep_after_resume
         total_cycle_pause
     );
+# TODO support sleep after resume for when sleep cycle is big
+# sleep_after_resume
+
     $self->stop_timer;
 }
 
 sub pause {
     my ($self, $pause_start_time) = @_;
     return unless $self->is_timer_active;
+
     my $now = $pause_start_time || $self->now;
-    my $actual_sleep = $now - $self->cycle_start_time - $self->total_cycle_pause;
-    $self->sleep_after_resume( $self->total_sleep_computed - $actual_sleep );
+
+# TODO support sleep after resume for when sleep cycle is big
+#    my $cycle_start_time     = $self->cycle_start_time;
+#    my $total_cycle_pause    = $self->total_cycle_pause;
+#    my $total_sleep_computed = $self->total_sleep_computed + $self->cycle_sleep;
+#    my $actual_sleep         = $now - $cycle_start_time - $total_cycle_pause;
+#    my $sleep_after_resume   = $total_sleep_computed - $actual_sleep;
+#    $self->sleep_after_resume($sleep_after_resume);
+
     $self->pause_start_time($now);
     $self->stop_timer;
+#    print "PAUSING now=$now actual_sleep=$actual_sleep cycle_start_time=$cycle_start_time total_cycle_pause=$total_cycle_pause sleep_after_resume=$sleep_after_resume total_sleep_computed=$total_sleep_computed\n";
 }
 
 sub resume {
@@ -193,6 +208,7 @@ sub resume {
     $self->total_cycle_pause( $self->total_cycle_pause + $pause_time );
     $self->pause_start_time(undef); 
     $self->start_timer;
+    $self->_on_timer_tick;
 }
 
 1;

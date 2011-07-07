@@ -70,6 +70,7 @@ sub wait_for_animation_complete {
 # call to signify animation has completed or animation has been stopped
 sub _animation_complete {
     my $self = shift;
+    print "com!!!!!\n";
     $self->set_forward_dir;
     $self->broadcast_animation_complete;
 }
