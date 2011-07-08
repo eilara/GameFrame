@@ -28,7 +28,7 @@ my $app = App->new(
     layer_manager_args => [layers => [qw(path)]],
 );
 
-my $markers = Markers->new(size => $app->size, spacing => 80);
+my $markers = Markers->new(size => $app->size, xy => [0,0], spacing => 80);
 
 my $waypoints = Waypoints->new(
     markers   => $markers,

@@ -114,8 +114,8 @@ sub for_char_in_map {
 }
 
 sub paint {
-    my ($self, $surface) = @_;
-    $surface->draw_rect([@{$_->[0]}], $_->[1]) # draw path, avoid aliasing
+    my $self = shift;
+    $self->draw_rect([@{$_->[0]}], $_->[1]) # draw path, avoid aliasing
         for @{ $self->cached_path_rects };
 #    draw waypint marks    
 #    $surface->draw_rect([$_->[0] - 1, $_->[1] -1, 2, 2], 0xFFFF00FF)
