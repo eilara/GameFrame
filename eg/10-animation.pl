@@ -20,6 +20,7 @@ with qw(
     GameFrame::Role::Paintable
     GameFrame::Role::Positionable
     GameFrame::Role::Animated
+    GameFrame::Role::Active
 );
 
 sub start {

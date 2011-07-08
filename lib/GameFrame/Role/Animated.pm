@@ -20,8 +20,6 @@ use Scalar::Util qw(weaken);
 use aliased 'GameFrame::Animation';
 use aliased 'GameFrame::Animation::Composite';
 
-with 'GameFrame::Role::Active';
-
 sub animate {
     my ($self, $spec) = @_;
     my $ani = $self->create_animation($spec);
@@ -34,6 +32,12 @@ sub create_animation {
     return ref($spec) eq 'ARRAY'?
            $self->_create_composite_animation($spec):
            $self->_create_single_animation($spec);
+}
+
+sub create_move_animation {
+    my ($self, $spec) = @_;
+    $spec->{attribute} = 'xy_vec';
+    $self->_create_single_animation($spec);
 }
 
 sub _create_single_animation {

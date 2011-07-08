@@ -29,6 +29,7 @@ with qw(
     GameFrame::Role::Positionable
     GameFrame::Role::SDLEventHandler
     GameFrame::Role::Animated
+    GameFrame::Role::Active
 );
 
 use Coro;
@@ -37,9 +38,8 @@ use EV;
 
 sub start {
     my $self = shift;
-    $self->start_animation;
-    $self->wait_for_animation_complete; # block forever, because animation
-                                        # is forever
+    # block forever, because animation is forever
+    $self->start_animation_and_wait;
 }
 
 sub on_mouse_button_up {
