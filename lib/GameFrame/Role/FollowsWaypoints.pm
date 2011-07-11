@@ -2,6 +2,7 @@ package GameFrame::Role::FollowsWaypoints;
 
 use Moose::Role;
 use Coro;
+use Math::Vector::Real;
 use aliased 'GameFrame::Grid::Waypoints';
 
 # waypoint followers move along waypoints
@@ -19,7 +20,7 @@ sub follow_waypoints {
     my @wps = @{ $self->waypoints->points_px };
     $self->xy(shift @wps);
     for my $wp (@wps) {
-        $self->move(to => sub { $wp });
+        $self->move_to(V(@$wp));
     }
 }
 

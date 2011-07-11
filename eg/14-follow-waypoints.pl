@@ -50,7 +50,7 @@ my $app = App->new(
     layer_manager_args => [layers => [qw(path top)]],
 );
 
-my $markers = Markers->new(size => $app->size, spacing => 80);
+my $markers = Markers->new(size => $app->size, xy => [0,0], spacing => 80);
 
 my $waypoints = Waypoints->new(
     markers   => $markers,
@@ -59,10 +59,11 @@ my $waypoints = Waypoints->new(
 );
 
 my $crawler = GameFrame::eg::WaypointCrawler->new(
+    rect       => [0, 0, 22, 26],
     image      => 'arrow',
     layer      => 'top',
     waypoints  => $waypoints,
-    v          => 250,
+    speed      => 400,
 );
 
 $app->run;

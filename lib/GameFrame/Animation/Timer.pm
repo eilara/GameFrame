@@ -78,6 +78,9 @@ has last_cycle_complete_time => (is => 'rw');
 # sum of all sleep performed so far in cycle
 has total_sleep_computed => (is => 'rw', default => 0);
 
+# when was last tick
+has last_tick_time => (is => 'rw', default => 0);
+
 # when was last pause started, if in pause
 has pause_start_time => (is => 'rw');
 
@@ -113,25 +116,30 @@ sub _on_first_timer_tick {
     my ($self, $cycle_start_time) = @_;
     $cycle_start_time ||= $self->now;
     $self->cycle_start_time($cycle_start_time);
+    $self->last_tick_time($cycle_start_time);
     $self->set_timer($cycle_start_time, $self->cycle_sleep, 0);
     $self->total_sleep_computed(0);
 }
 
 sub _on_timer_tick {
-    my $self = shift;
-    my $elapsed = $self->now -
+    my $self  = shift;
+    my $now   = $self->now;
+    my $delta = $self->now - $self->last_tick_time;
+    $self->last_tick_time($now);
+
+    my $elapsed = $now -
                   $self->cycle_start_time -
                   $self->total_cycle_pause;
     $self->total_sleep_computed($elapsed);
 
-    if (my $ideal_cycle_duration = $self->is_cycle_complete($elapsed)) {
+    if (my $ideal_cycle_duration = $self->is_cycle_complete($elapsed, $delta)) {
         $self->_stop($ideal_cycle_duration);
         $self->cycle_complete;
         $self->_on_final_timer_tick;
         return;
     }
 
-    $self->timer_tick($elapsed);
+    $self->timer_tick($elapsed, $delta);
 }
 
 sub _on_final_timer_tick {}
@@ -140,7 +148,7 @@ sub start {
     my ($self, $cycle_start_time) = @_;
     $self->_on_first_timer_tick($cycle_start_time);
     $self->start_timer;
-    $self->timer_tick(0);
+    $self->timer_tick(0, 0);
 }
 
 sub restart {
@@ -150,7 +158,7 @@ sub restart {
         unless $last_cycle_complete_time;
     $self->_on_first_timer_tick($last_cycle_complete_time);
     $self->start_timer;
-    $self->timer_tick(0);
+    $self->timer_tick(0, 0);
 }
 
 # stop is split into _stop and stop: _stop is called when cycle
@@ -173,6 +181,7 @@ sub _stop {
     $self->$_(0) for qw(
         cycle_start_time
         total_sleep_computed
+        last_tick_time
         total_cycle_pause
     );
 # TODO support sleep after resume for when sleep cycle is big
