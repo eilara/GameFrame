@@ -4,8 +4,6 @@ use lib "$Bin/../lib";
 
 # how to move positionable things along waypoints
 # on running, an arrow should start following the waypoints
-#
-# note how we hide the cursor after it has reached the last waypoint
 
 package GameFrame::eg::WaypointCrawler;
 use Moose;
@@ -19,7 +17,6 @@ with qw(
 sub start {
     my $self = shift;
     $self->follow_waypoints;
-    $self->hide;
 }
 
 # ------------------------------------------------------------------------------
@@ -58,12 +55,12 @@ my $waypoints = Waypoints->new(
     layer     => 'path',
 );
 
-my $crawler = GameFrame::eg::WaypointCrawler->new(
+GameFrame::eg::WaypointCrawler->new(
     rect       => [0, 0, 22, 26],
     image      => 'arrow',
     layer      => 'top',
     waypoints  => $waypoints,
-    speed      => 400,
+    speed      => 200,
 );
 
 $app->run;

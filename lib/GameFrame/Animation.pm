@@ -1,9 +1,11 @@
 package GameFrame::Animation;
 
+# an animation class for tweens- animation with fixed duration
+# and predetermined path and easing not for following moving targets,
+# moving with externally changed velocity, or apriori unknown duration
+#
 # an animation is constructed using a spec:
 #
-# - to         - final value, 'from' will be computed from starting
-#                attribute value
 # - duration   - cycle duration in seconds
 # - target     - target object with the attribute neing animated
 # - attribute  - attribute name on the target
@@ -15,6 +17,11 @@ package GameFrame::Animation;
 #                of the curve class that will set the trajectory
 #                for the animation
 # - curve_args - any arguments for the curve
+# - from       - initial value, if not given will be computed from
+#                the attribute on the target
+# - to         - final value, 'from' will be computed from starting
+#                attribute value, only for default linear curve and
+#                for linear curve types (e.g. sine)
 #
 # an animation is built from:
 # - Timeline: for which the animation is the provider
@@ -24,9 +31,13 @@ package GameFrame::Animation;
 # - Proxy: the connection to the target, on it we get/set the
 #   animated value, consult it concerning the animation
 #   resolution for int optimization, and get the 'from' value
+# - Easing function: maps elapsed time to progress in the animation
+# - Curve: the trajectory of the animation, deault is linear
 #
-# all the animation does is create the 2 correctly, and then
-# convert calls from the timeline into values on the proxy
+# all the animation does is create the helpers, then convert each
+# tick from the timeline to a set attribute on the proxy, by piping
+# the elapsed time through the easing function, then through the
+# curve to compute the animated value
 
 use Moose;
 use Scalar::Util qw(weaken);

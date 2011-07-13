@@ -1,68 +1,54 @@
 package GameFrame::Role::Movable;
 
+# a positionable object with required scalar speed which manages
+# a MoveTo animation
+
 use Moose::Role;
 use MooseX::Types::Moose qw(Num);
-use aliased 'GameFrame::Animation::Timeline';
-use aliased 'GameFrame::Animation::CycleLimit';
+use Scalar::Util qw(weaken);
 use Math::Vector::Real;
+use GameFrame::MooseX;
+use aliased 'GameFrame::Animation::MoveTo';
+use aliased 'GameFrame::Role::Positionable';
+use aliased 'GameFrame::Role::Animation';
 
 # speed in pixels per second
 has speed => (is => 'rw', isa => Num, required => 1);
 
-has to        => (is => 'rw');
-has next_xy   => (is => 'rw');
-has last_dist => (is => 'rw', default => 2**16);
+has destination_getter => (
+    traits   => ['Code'],
+    is       => 'rw',
+    isa      => 'CodeRef',
+    handles => {compute_destination => 'execute'},
+);
+
+compose_from MoveTo,
+    prefix => 'motion',
+    inject => sub {
+        my $self = shift;
+        weaken $self; # don't want args to hold strong ref to self
+        return (target => $self);
+    };
+#   has => {handles => Animation};
 
 with 'GameFrame::Role::Positionable';
 
-# move with variable velocity towards a changing target
 sub move_to {
     my ($self, $to) = @_;
-
-    my $to_code = ref($to) eq 'CODE'? $to: sub { $to };
-    $self->to($to_code);
-
-    my $cycle_limit = CycleLimit->method_limit(check_move_limit => $self);
-    my $timeline = Timeline->new(
-        cycle_limit => $cycle_limit,
-        provider    => $self,
-    );
-    $timeline->start;
-    $timeline->wait_for_animation_complete;
+    $self->set_to($to);
+    $self->motion->start_animation_and_wait;
 }
 
-sub timer_tick {
-    my ($self, $elapsed, $delta) = @_;
-    $self->xy_vec($self->next_xy) if $delta;
-}
-
-sub cycle_complete {
-    my $self = shift;
-    $self->xy_vec($self->to->());
-    $self->last_dist(2**16); # should also reset on stop
-}
-
-sub check_move_limit {
-    my ($self, $elapsed, $delta) = @_;
-
-    my $speed   = $self->speed;
-    my $to      = $self->to->();
-    my $current = $self->xy_vec;
-    my $dir_vec = $to - $current;
-    my $dist    = abs($dir_vec);
-    my $ratio   = $speed * $delta / $dist;
-    my $new     = $current + $dir_vec * $ratio;
-
-    $self->next_xy($new);
-
-    my $reached = $dist <= 1;
-    return 1 if $reached;
-
-    my $last_dist = $self->last_dist;
-# TODO problematic when subject is moving wildly
-    return 1 if $dist >= $last_dist;
-    $self->last_dist($dist);
-    return 0;
+sub set_to {
+    my ($self, $to) = @_;
+    # 'to' can be any code that returns Vector2D, array ref of dim 2,
+    # positionable, or Vector2D
+    my $to_code = 
+        ref($to) eq       'CODE' ? $to:
+        ref($to) eq      'ARRAY' ? do { my $vec = V(@$to); sub { $vec } }:
+        ref($to) eq Positionable ? do { weaken $to; sub { $to->xy_vec } }:
+                                   sub { $to };
+    $self->destination_getter($to_code);
 }
 
 # returns by how many pixels per second did we slow
