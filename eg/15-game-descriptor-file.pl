@@ -4,8 +4,8 @@ use lib "$Bin/../lib";
 
 # how to configure games in a descriptor file using the GameFromFile role
 # exactly like the waypoint follower example, except all the properties
-# of all the objects (except the DescriptorWaypointCrawler) are defined
-# in an external configuration file called waypoints.gf
+# of all the objects are defined in an external configuration file called
+# waypoints.gf
 #
 # also shows how to compose objects using GameFrame::MooseX::compose_from
 
@@ -20,9 +20,7 @@ with qw(
 
 sub start {
     my $self = shift;
-    $self->show;
     $self->follow_waypoints;
-    $self->hide;
 }
 
 # ------------------------------------------------------------------------------

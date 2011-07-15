@@ -29,6 +29,8 @@ compose_from MoveTo,
         weaken $self; # don't want args to hold strong ref to self
         return (target => $self);
     };
+# TODO fix moosex role buildinstanceof to support handles in roles
+#      then we could make movable animated
 #   has => {handles => Animation};
 
 with 'GameFrame::Role::Positionable';
