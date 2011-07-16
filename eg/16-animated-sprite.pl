@@ -18,14 +18,14 @@ with qw(
     GameFrame::Role::Active
 );
 
-use Coro::Timer qw(sleep);
 sub start {
     my $self = shift;
     while (1) {
-        for (1..4) {
-            $self->current_frame($_);
-            sleep 1/10;
-        }
+        # note frames start with 1
+        $self->animate_sprite(
+            from_to  => [1,4],
+            duration => 2,
+        );
     }
 }
 

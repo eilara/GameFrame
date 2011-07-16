@@ -138,6 +138,12 @@ sub compute_value_at {
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
 
+    # fix from_to
+    if (my $from_to = delete($args{from_to})) {
+        $args{from} = $from_to->[0];
+        $args{to}   = $from_to->[1];
+    }
+
     # fix proxy args
     $args{proxy_args} = [
         target    => delete($args{target}),

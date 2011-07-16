@@ -4,13 +4,18 @@ package GameFrame::Role::AnimatedSprite;
 
 use Moose::Role;
 use MooseX::Types::Moose qw(Str ArrayRef HashRef);
+use aliased 'GameFrame::Animation';
+use aliased 'GameFrame::Animation::Proxy::Int' => 'IntProxy';
 
 has sequences =>
     (is => 'ro', required => 1, isa => HashRef[ArrayRef[ArrayRef]]);
 
 has _sequence => (is => 'rw', isa => Str, lazy_build => 1);
 
-with 'GameFrame::Role::Sprite';
+with qw(
+    GameFrame::Role::Sprite
+    GameFrame::Role::Animated
+);
 
 sub _build__sequence { (keys %{ shift->sequences })[0] }
 
@@ -23,11 +28,34 @@ around _build_sprite => sub {
     );
 };
 
+sub animate_sprite {
+    my ($self, %args) = @_;
+
+    my $sequence = delete $args{sequence};
+    $self->sequence($sequence) if $sequence;
+
+    # TODO animation should do one tick on last value!
+    if ($args{to}) { $args{to}           += 0.99 }
+    else           { $args{from_to}->[1] += 0.99 }
+
+    # TODO animation should be stored in a field for animation control
+    $self->animate({
+        attribute   => 'current_frame',
+        proxy_class => IntProxy,
+        %args,
+    });
+}
+
 sub sequence {
     my ($self, $value) = @_;
     return $self->_sequence if @_ == 1;
+    my $current_frame = $self->current_frame; # save it because setting 
+                                              # sequence resets it
     $self->_sequence($value);
-    $self->sprite->sequence($value);
+    my $sprite = $self->sprite;
+    $sprite->sequence($value);
+
+    $sprite->next for 2..$current_frame; # advance to the correct frame
 }
 
 # TODO patch SDLx to allow setting frame num
@@ -55,21 +83,4 @@ around BUILDARGS => sub {
 1;
 
 __END__
-
-       $self->animate_sprite(
-            sequence => $self->sequence,
-            frames   => 4,
-            sleep    => 0.2,
-        );
-
-sub animate_sprite {
-    my ($self, %args) = @_;
-    my ($sequence, $frames, $sleep) = map { $args{$_} } qw(sequence frames sleep);
-    interval
-        times => $frames,
-        sleep => $sleep,
-        step  => sub { $self->next_animation },
-        start => sub { $self->sequence_animation($sequence) };
-}
-
 
