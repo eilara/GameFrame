@@ -12,29 +12,27 @@ package GameFrame::eg::AnimatedSprite;
 use MooseX::Types::Moose qw(Str);
 use Moose;
 
-has sequence => (is => 'rw', required => 1);
-
 with qw(
-    GameFrame::Role::SDLEventHandler
     GameFrame::Role::AnimatedSprite
+    GameFrame::Role::SDLEventHandler
     GameFrame::Role::Active
 );
 
+use Coro::Timer qw(sleep);
 sub start {
     my $self = shift;
     while (1) {
-        $self->animate_sprite(
-            sequence => $self->sequence,
-            frames   => 4,
-            sleep    => 0.2,
-        );
+        for (1..4) {
+            $self->current_frame($_);
+            sleep 1/10;
+        }
     }
 }
 
 sub on_mouse_button_up {
     my $self = shift;
     $self->sequence(
-        $self->sequence eq 'left_right'? 'corners': 'left_right'
+        $self->sequence eq 'digits'? 'letters': 'digits'
     );
 }
 
@@ -52,15 +50,12 @@ my $app = App->new(
 );
 
 my $sprite = GameFrame::eg::AnimatedSprite->new(
-    xy       => [100, 100],
-    sequence => 'left_right',
-    image    => {
-        file      => 'animated',
-        size      => [22, 22],
-        sequences => {
-            left_right => [ [0,0], [1,0], [2,0], [3,0] ],
-            corners    => [ map { [$_,1] } 0..3 ],
-        },
+    rect      => [100, 100, 22, 22],
+    image     => 'animated',
+    sequence  => 'digits',
+    sequences => {
+        digits  => [ [0,0], [1,0], [2,0], [3,0] ],
+        letters => [ [0,1], [1,1], [2,1], [3,1] ],
     },
 );
 

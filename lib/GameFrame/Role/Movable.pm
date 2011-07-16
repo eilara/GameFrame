@@ -30,8 +30,9 @@ compose_from MoveTo,
         return (target => $self);
     };
 # TODO fix moosex role buildinstanceof to support handles in roles
-#      then we could make movable animated
-#   has => {handles => Animation};
+#      then we could make movable animated, but with different
+#      prefix on the control methods (e.g. motion) so it can
+#      be both animated for some properties, movable for xy
 
 with 'GameFrame::Role::Positionable';
 

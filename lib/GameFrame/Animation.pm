@@ -145,7 +145,7 @@ around BUILDARGS => sub {
         @{ $args{proxy_args} || []},
     ];
 
-    $args{proxy_class} = ProxyFactory->find_proxy
+    $args{proxy_class} ||= ProxyFactory->find_proxy
         (@{ $args{proxy_args} });
 
     # fix timeline args

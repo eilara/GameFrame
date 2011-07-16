@@ -5,8 +5,10 @@ package GameFrame::ImageFile;
 
 use Moose;
 use MooseX::Types::Moose qw(Bool Str);
-use aliased 'SDLx::Sprite' => 'SDLxSprite';
 use Imager;
+use aliased 'SDL::Rect';
+use aliased 'SDLx::Sprite'           => 'SDLxSprite';
+use aliased 'SDLx::Sprite::Animated' => 'SDLxAnimatedSprite';
 use GameFrame::ResourceManager;
 
 has file    => (is => 'ro', isa => Str , required => 1);
@@ -17,6 +19,17 @@ sub build_sdl_sprite {
     my $file = image_resource $self->file;
     $file = $self->scale_file($file, $size) if $self->stretch;
     return SDLxSprite->new(image => $file);
+}
+
+sub build_sdl_animated_sprite {
+    my ($self, $size, $sequences, $sequence) = @_;
+    my $file = image_resource $self->file;
+    return SDLxAnimatedSprite->new(
+        image     => $file,
+        rect      => Rect->new(0, 0, @$size),
+        sequences => $sequences,
+        sequence  => $sequence,
+    );
 }
 
 sub scale_file {

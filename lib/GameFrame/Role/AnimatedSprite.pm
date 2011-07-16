@@ -3,55 +3,65 @@ package GameFrame::Role::AnimatedSprite;
 # the animated sprite role
 
 use Moose::Role;
-use MooseX::Types::Moose qw(Num HashRef);
-use aliased 'SDL::Rect';
-use aliased 'SDLx::Sprite::Animated' => 'SDLxSprite';
-use GameFrame::ResourceManager;
-use GameFrame::Time qw(interval);
+use MooseX::Types::Moose qw(Str ArrayRef HashRef);
 
-sub x;sub y; # for benefit of Rectangular role
-has x => (is => 'rw', required => 1, isa => Num, default => 0, trigger => sub { shift->_update_x});
-has y => (is => 'rw', required => 1, isa => Num, default => 0, trigger => sub { shift->_update_y});
+has sequences =>
+    (is => 'ro', required => 1, isa => HashRef[ArrayRef[ArrayRef]]);
 
-has image => (is => 'ro', isa => HashRef, required => 1);
+has _sequence => (is => 'rw', isa => Str, lazy_build => 1);
 
-has sprite => (
-    is         => 'ro',
-    lazy_build => 1,
-    handles    => {
-        draw               => 'draw',
-        sprite_x           => 'x',
-        sprite_y           => 'y',
-        sprite_w           => 'w',
-        sprite_h           => 'h',
-        sequence_animation => 'sequence',
-        next_animation     => 'next',
-    },
-);
+with 'GameFrame::Role::Sprite';
 
-with qw(
-    GameFrame::Role::Rectangular
-    GameFrame::Role::Paintable
-);
+sub _build__sequence { (keys %{ shift->sequences })[0] }
 
-# copy size on image from size or w/h of self
+around _build_sprite => sub {
+    my ($orig, $self) = @_;
+    return $self->build_sdl_animated_sprite(
+        $self->size,
+        $self->sequences,
+        $self->_sequence,
+    );
+};
+
+sub sequence {
+    my ($self, $value) = @_;
+    return $self->_sequence if @_ == 1;
+    $self->_sequence($value);
+print "SETTING:$value\n";
+    $self->sprite->sequence($value);
+}
+
+# TODO patch SDLx to allow setting frame num
+# TODO horrible things will happen if you provite out of bound frames here
+sub current_frame {
+    my ($self, $new_frame) = @_;
+    my $sprite = $self->sprite;
+    my $current_frame = $sprite->current_frame;
+    return $current_frame if @_ == 1;
+
+    return if $new_frame == $current_frame;
+    my $dir = $new_frame > $current_frame? 'next': 'previous';
+    $sprite->$dir for 1 .. abs($new_frame - $current_frame);
+}
+
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
-    my $size = $args{size};
-    ($args{w}, $args{h}) = @$size if $size;
-    $args{image}->{size} ||= [$args{w}, $args{h}];
+
+    if (my $sequence = delete $args{sequence})
+        { $args{_sequence} = $sequence }
+
     return $class->$orig(%args);
 };
 
-sub _build_sprite {
-    my $self = shift;
-    my $image = $self->image;
-    return SDLxSprite->new(
-        image     => image_resource $image->{file},
-        rect      => Rect->new(0, 0, @{ $image->{size} }),
-        sequences => $image->{sequences},
-    );
-}
+1;
+
+__END__
+
+       $self->animate_sprite(
+            sequence => $self->sequence,
+            frames   => 4,
+            sleep    => 0.2,
+        );
 
 sub animate_sprite {
     my ($self, %args) = @_;
@@ -63,23 +73,4 @@ sub animate_sprite {
         start => sub { $self->sequence_animation($sequence) };
 }
 
-sub w { shift->image->{size}->[0] }
-sub h { shift->image->{size}->[1] }
-
-sub _update_x {
-    my $self = shift;
-    $self->sprite_x($self->actual_x);
-}
-
-sub _update_y {
-    my $self = shift;
-    $self->sprite_y($self->actual_y);
-};
-
-sub paint {
-    my ($self, $surface) = @_;
-    $self->draw($surface);
-}
-
-1;
 

@@ -15,7 +15,7 @@ sub find_proxy {
     return IntProxy if $is_known_int;
 
     my $att = $target->meta->find_attribute_by_name($att_name);
-    return Proxy unless $att;
+    return Proxy unless $att; # could be method or something
 
     my $type = $att->type_constraint;
     return Proxy unless $type;

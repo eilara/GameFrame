@@ -15,7 +15,7 @@ has image => (
     isa      => ImageFile, 
     required => 1,
     coerce   => 1,
-    handles  => ['build_sdl_sprite'],
+    handles  => qr/^build_sdl/,
 );
 
 has sprite => (

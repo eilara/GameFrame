@@ -2,6 +2,8 @@ package GameFrame::Animation::Proxy::Int;
 
 use Moose;
 
+# TODO add distinct int optimization
+
 extends 'GameFrame::Animation::Proxy';
 
 around set_attribute_value => sub {
