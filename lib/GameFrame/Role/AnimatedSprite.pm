@@ -27,7 +27,6 @@ sub sequence {
     my ($self, $value) = @_;
     return $self->_sequence if @_ == 1;
     $self->_sequence($value);
-print "SETTING:$value\n";
     $self->sprite->sequence($value);
 }
 
