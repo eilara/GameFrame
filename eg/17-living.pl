@@ -9,13 +9,13 @@ package GameFrame::eg::LivingSprite;
 use Moose;
 use Math::Vector::Real;
 
-with qw(
-    GameFrame::Role::SDLEventHandler
-    GameFrame::Role::Sprite
-    GameFrame::Role::Movable
-    GameFrame::Role::Living
-    GameFrame::Role::HealthBar
-    GameFrame::Role::Active
+with map { "GameFrame::Role::$_" } qw(
+    SDLEventHandler
+    Sprite
+    Movable
+    Living
+    HealthBar
+    Active
 );
 
 sub start {
@@ -28,6 +28,8 @@ sub on_mouse_button_up { shift->hit(30) }
 
 after paint => sub {
     my $self = shift;
+    # we want the HP text to show (-5,25) pixels to the
+    # right/bottom of my top left corner
     my $pos = $self->xy_vec + V(-5, 25);
     $self->draw_gfx_text(
         [@$pos],
@@ -51,7 +53,7 @@ my $app = App->new(
 
 GameFrame::eg::LivingSprite->new(
     rect       => [100, 100, 22, 26],
-    speed      => 200, # for death animation
+    speed      => 100, # for death animation
     start_hp   => 100,
     image      => 'arrow',
     health_bar => [0, -10, 22, 2],
