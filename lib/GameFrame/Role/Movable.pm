@@ -42,6 +42,8 @@ sub move_to {
     $self->motion->start_animation_and_wait;
 }
 
+sub start_motion { shift->motion->start_animation }
+
 sub set_to {
     my ($self, $to) = @_;
     # 'to' can be any code that returns Vector2D, array ref of dim 2,

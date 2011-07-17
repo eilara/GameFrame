@@ -7,7 +7,7 @@ use lib "$Bin/../lib";
 
 package GameFrame::eg::LivingSprite;
 use Moose;
-use Coro;
+use Math::Vector::Real;
 
 with qw(
     GameFrame::Role::SDLEventHandler
@@ -21,13 +21,15 @@ sub on_mouse_button_up { shift->hit(30) }
 
 sub on_death {
     my $self = shift;
-    async { $self->move(to => sub { [100, 480] }) };
+    $self->set_to([100,480]);
+    $self->start_motion; # returns immediately, motion starts async in Coro thread
 }
 
 after paint => sub {
-    my ($self, $surface) = @_;
-    $surface->draw_gfx_text(
-        $self->translate_point(y => 35),
+    my $self = shift;
+    my $pos = $self->xy_vec + V(-5, 25);
+    $self->draw_gfx_text(
+        [@$pos],
         0xFFFFFFFF,
         "HP=". $self->hp,
     );
@@ -47,11 +49,11 @@ my $app = App->new(
 );
 
 my $sprite = GameFrame::eg::LivingSprite->new(
-    xy                => [100, 100],
-    v                 => 200,
-    start_hp          => 100,
-    image             => 'arrow',
-    health_bar_offset => [0, -10],
+    rect       => [100, 100, 22, 26],
+    speed      => 200, # for death animation
+    start_hp   => 100,
+    image      => 'arrow',
+    health_bar => [0, -10, 22, 2],
 );
 
 $app->run;

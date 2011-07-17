@@ -49,7 +49,7 @@ my $app = App->new(
     bg_color => 0x0,
 );
 
-my $sprite = GameFrame::eg::AnimatedSprite->new(
+GameFrame::eg::AnimatedSprite->new(
     rect      => [100, 100, 22, 22],
     image     => 'animated',
     sequence  => 'digits',
