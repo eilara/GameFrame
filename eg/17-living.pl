@@ -15,15 +15,16 @@ with qw(
     GameFrame::Role::Movable
     GameFrame::Role::Living
     GameFrame::Role::HealthBar
+    GameFrame::Role::Active
 );
 
-sub on_mouse_button_up { shift->hit(30) }
-
-sub on_death {
+sub start {
     my $self = shift;
-    $self->set_to([100,480]);
-    $self->start_motion; # returns immediately, motion starts async in Coro thread
+    $self->wait_for_death;
+    $self->move_to([100,480]);
 }
+
+sub on_mouse_button_up { shift->hit(30) }
 
 after paint => sub {
     my $self = shift;
@@ -48,7 +49,7 @@ my $app = App->new(
     bg_color => 0x0,
 );
 
-my $sprite = GameFrame::eg::LivingSprite->new(
+GameFrame::eg::LivingSprite->new(
     rect       => [100, 100, 22, 26],
     speed      => 200, # for death animation
     start_hp   => 100,

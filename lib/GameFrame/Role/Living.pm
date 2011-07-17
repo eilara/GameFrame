@@ -6,6 +6,7 @@ package GameFrame::Role::Living;
 
 use Moose::Role;
 use MooseX::Types::Moose qw(Bool Num);
+use aliased 'Coro::Signal';
 
 has is_alive => (
     is       => 'rw',
@@ -26,8 +27,23 @@ has hp => (
     default  => sub { shift->start_hp },
 );
 
+has death_signal => (
+    is      => 'ro',
+    default => sub { Signal->new },
+    handles => {
+        _wait_for_death => 'wait',
+        broadcast_death => 'broadcast',
+    },
+);
+
 sub on_hit   {}
 sub on_death {}
+
+sub wait_for_death {
+    my $self = shift;
+    return unless $self->is_alive;
+    $self->_wait_for_death;
+}
 
 sub hit {
     my ($self, $damage) = @_;
@@ -39,6 +55,7 @@ sub hit {
     if ($hp == 0) {
         $self->is_alive(0);
         $self->on_death;
+        $self->broadcast_death;
     }
 }
 
