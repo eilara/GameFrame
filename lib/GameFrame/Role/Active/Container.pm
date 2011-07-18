@@ -1,11 +1,11 @@
 package GameFrame::Role::Active::Container;
 
 use Moose::Role;
-use aliased 'GameFrame::Role::Active::Child';
 use Coro;
 
 # a container of active objects
 # it itself need not be active
+# for it to work, children must do Active::Child
 # solves these problems when you need to manage many active objects:
 # - its a container, so you can create and add them
 # - no need to remove a child when its coro deactivates, it will
@@ -19,6 +19,8 @@ use Coro;
 # TODO: do we even need this? active object are referenced by the coro
 #       scheduler as lexical state in the code, maybe for active objects
 #       you dont need to keep strong refs anywhere
+#       true, a weak object set will do fine, but you still need notifications
+#       of deactivation perhaps?
 
 with 'GameFrame::Role::Container';
 

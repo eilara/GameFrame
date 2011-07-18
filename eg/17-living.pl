@@ -28,9 +28,9 @@ sub on_mouse_button_up { shift->hit(30) }
 
 after paint => sub {
     my $self = shift;
-    # we want the HP text to show (-5,25) pixels to the
+    # we want the HP text to show (-7,27) pixels to the
     # right/bottom of my top left corner
-    my $pos = $self->xy_vec + V(-5, 25);
+    my $pos = $self->xy_vec + V(-7, 27);
     $self->draw_gfx_text(
         [@$pos],
         0xFFFFFFFF,
@@ -52,11 +52,11 @@ my $app = App->new(
 );
 
 GameFrame::eg::LivingSprite->new(
-    rect       => [100, 100, 22, 26],
+    rect       => [100, 100, 22, 22],
     speed      => 100, # for death animation
     start_hp   => 100,
-    image      => 'arrow',
-    health_bar => [0, -10, 22, 2],
+    image      => 'mole',
+    health_bar => [0, -8, 22, 2],
 );
 
 $app->run;

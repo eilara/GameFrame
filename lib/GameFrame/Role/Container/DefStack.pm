@@ -15,7 +15,7 @@ with 'GameFrame::Role::Container';
 around next_child_args => sub {
     my ($orig, $self, $idx) = @_;
     my @defs = @{ $self->child_defs };
-    return unless $idx < @defs;
+    return unless $idx < @defs; # no more sorry
     return $defs[$idx];
 };
 

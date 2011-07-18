@@ -2,58 +2,54 @@
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
-# how to use the container roles for 1 -> * strong composition between
-# game objects
-# click mouse to start a wave of cursors
+# how to use the container to create a scene graph- the composition
+# network of game objects
 #
-# the wave and the wave manager are composites with a 1 -> * relationship
-# with their children
-# both create and add children using $self->create_next_child
-# the wave is a simple container, that creates the child according to the
-# current definition in child_args property
-# the wave manager is a DefStack container, and keeps the child definitons
-# in a child_def property, which is shifted on each create_next_child()
-# when there are no more defs, it turns into a nop
+# the spawner is the container
+# it keeps a strong reference to the children it creates
+# it is a DefStack container, which creates children according
+# to definitions given in constructor arg 'child_defs'
+# when no more definitions remain, no more children are created
+#
+# the container have 2 responsibilites:
+# * creating the children according to some policy
+# * keeping the only strong reference to the children in the game
+# 
+# different container types create their children in different ways:
+# * Simple    - whatever is in child_args HashRef is used as constructor
+#               arguments for next child created
+# * DefStack  - creates children according to a stack of definitions
+#               until there are no more definitions
+# * DefByName - creates all its children on construction (vs. the
+#               other containers creating children on create_next_child())
+#               and allows you to name each child, then access the child
+#               by name
+#
+# DefStack is useful when you have a known finite list of enemies
+# to spawn
+#
+# DefByName is useful when you want a static panel with some 
+# widgets inside
+#
+# Simple is flexible enough to use anywhere, just set child_args
+# before calling create_next_child()
+#
+# some containers (e.g. Active) also helps with managing active
+# children, and getting notification when they are deactivating
 
-package GameFrame::eg::CursorWaveChild;
+# ------------------------------------------------------------------------------
+
+package GameFrame::eg::ContainerSpawnerChild;
 use Moose;
 
 with qw(
     GameFrame::Role::Sprite
-    GameFrame::Role::Movable
-    GameFrame::Role::Active
+    GameFrame::Role::SDLEventHandler
 );
-
-sub start {
-    my $self = shift;
-    $self->move(to => sub { [0, 0] });
-    $self->hide;
-}
 
 # ------------------------------------------------------------------------------
 
-package GameFrame::eg::CursorWave;
-use Moose;
-use GameFrame::Time qw(interval);
-
-with qw(
-    GameFrame::Role::Active
-    GameFrame::Role::Container::Simple
-);
-
-has [qw(num_in_wave wave_interval)] => (is => 'ro', required => 1);
-
-sub start {
-    my $self = shift;
-    interval
-        times => $self->num_in_wave,
-        sleep => $self->wave_interval,
-        step  => sub { $self->create_next_child };
-}
-
-# ------------------------------------------------------------------------------
-
-package GameFrame::eg::CursorWaveManager;
+package GameFrame::eg::ContainerSpawner;
 use Moose;
 
 with qw(
@@ -76,27 +72,20 @@ my $app = App->new(
     bg_color => 0x0,
 );
 
-my %common_wave  = (child_class => 'GameFrame::eg::CursorWave');
-my %common_child = (
-    child_class => 'GameFrame::eg::CursorWaveChild',
-    xy          => [600, 400],
-    image       => 'arrow',
-); 
+my %common = (
+    child_class => 'GameFrame::eg::ContainerSpawnerChild',
+    image       => 'mole',
+    size        => [22, 22],
+);
 
-my $spawn_manager = GameFrame::eg::CursorWaveManager->new(
+# must keep ref to it, for it is not active, and will disappear
+# with all its children if we dont
+my $container = GameFrame::eg::ContainerSpawner->new(
     child_defs => [
-        {
-            %common_wave, num_in_wave => 10, wave_interval => 1,
-            child_args => {%common_child, v => 200},
-        },
-        {
-            %common_wave, num_in_wave => 20, wave_interval => 0.5,
-            child_args => {%common_child, v => 100},
-        },
-        {
-            %common_wave, num_in_wave =>  5, wave_interval => 2,
-            child_args => {%common_child, v => 300},
-        },
+        {%common, xy => [100, 100]},
+        {%common, xy => [200, 100]},
+        {%common, xy => [100, 200]},
+        {%common, xy => [200, 200]},
     ],
 );
 
