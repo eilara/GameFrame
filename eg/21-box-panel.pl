@@ -3,6 +3,8 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
 # how to use the box panel role to layout child rectangles
+# the box panel role saves you from doing layout by serving
+# as a box layout manager for its children
 
 package GameFrame::eg::BoxPanelChild;
 use Moose;
@@ -46,21 +48,25 @@ my $panel = GameFrame::eg::BoxPanelContainer->new(
     orientation => 'vertical',
     rect        => [0, 0, 640, 480],
     child_defs  => [
+
         top_panel => {
             child_class => 'GameFrame::eg::BoxPanelChild',
             h           => 400, # w is implied by parent width
             color       => 0xFF0000FF,
         },
+
         bottom_panel => {
             child_class => 'GameFrame::eg::BoxPanelContainer',
             h           => 80,
             orientation => 'horizontal',
             child_defs  => [
+
                 left_panel => {
                     child_class => 'GameFrame::eg::BoxPanelChild',
-                    w           => 500, # h is implied by parent height
+                    w           => 400, # h is implied by parent height
                     color       => 0x00FF00FF,
                 },
+
                 right_panel => {
                     child_class => 'GameFrame::eg::BoxPanelChild',
                     w           => 240,

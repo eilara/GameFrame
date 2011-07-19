@@ -6,16 +6,17 @@ use lib "$Bin/../lib";
 # mouse over a panel to show mouse x/y inside that panel
 #
 # note only the moused-over event sink fires events
+#
 # to accept events from a box router parent, consume rectangular event sink role
 
 package GameFrame::eg::EventSink;
 use Moose;
+use Math::Vector::Real;
 
 has color => (is => 'ro', required => 1);
 
 has last_mouse_xy => (is => 'rw', default => sub { [0, 0] });
 
-with 'GameFrame::Role::Rectangle';
 with qw(
     GameFrame::Role::Paintable
     GameFrame::Role::Rectangular
@@ -23,10 +24,12 @@ with qw(
 );
 
 sub paint {
-    my ($self, $surface) = @_;
-    $surface->draw_rect($self->rect, $self->color);
-    $surface->draw_gfx_text(
-        $self->translate_point(xy => 20, 20),
+    my $self = shift;
+    $self->draw_rect($self->rect, $self->color);
+
+    my $pos = $self->xy_vec + V(20, 20);
+    $self->draw_gfx_text(
+        [@$pos],
         0x000000FF,
         join ',', @{$self->last_mouse_xy}
     );
@@ -42,7 +45,6 @@ sub on_mouse_motion {
 package GameFrame::eg::EventRouter;
 use Moose;
 
-with 'GameFrame::Role::Rectangle';
 with 'GameFrame::Role::Event::BoxRouter';
 
 # ------------------------------------------------------------------------------
@@ -50,7 +52,6 @@ with 'GameFrame::Role::Event::BoxRouter';
 package GameFrame::eg::TopLevelEventRouter;
 use Moose;
 
-with 'GameFrame::Role::Rectangle';
 with qw(
     GameFrame::Role::SDLEventHandler
     GameFrame::Role::Event::BoxRouter
@@ -71,7 +72,7 @@ my $app = App->new(
 
 my $panel = GameFrame::eg::TopLevelEventRouter->new(
     orientation => 'vertical',
-    size        => [640, 480],
+    rect        => [0, 0, 640, 480],
     child_defs  => [
         top_panel => {
             child_class => 'GameFrame::eg::EventSink',
