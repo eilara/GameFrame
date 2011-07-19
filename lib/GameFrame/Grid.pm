@@ -13,7 +13,7 @@ has markers => (
     is       => 'ro',
     isa      => Markers,
     required => 1,
-    handles  => [qw(compute_cell_pos col_marks row_marks)],
+    handles  => [qw(compute_cell_pos col_marks row_marks cell_center_xy)],
 );
 
 has init_cells => (is => 'ro', isa => ArrayRef[ArrayRef], default => sub { [] });

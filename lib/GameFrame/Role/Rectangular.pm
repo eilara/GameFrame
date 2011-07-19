@@ -27,6 +27,11 @@ around BUILDARGS => sub {
         $args{size} = [ @$rect[2,3] ];
     }
     $args{_size} = delete $args{size};
+
+    if (my $centered = delete $args{centered}) {
+        $args{is_centered} = $centered;
+    }
+
     return $class->$orig(%args);
 };
 

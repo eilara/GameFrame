@@ -1,9 +1,9 @@
-package GameFrame::Cursor;
+package GameFrame::Role::Cursor;
 
-use Moose;
+use Moose::Role;
 
 with qw(
-    GameFrame::Role::AnimatedSprite
+    GameFrame::Role::Paintable
     GameFrame::Role::Draggable
 );
 

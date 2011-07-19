@@ -18,10 +18,11 @@ use Moose;
 has [qw(mole grid)] => (is => 'ro', required => 1);
 
 with qw(
-    GameFrame::Role::Draggable
     GameFrame::Role::Sprite
+    GameFrame::Role::Cursor
 );
 
+# if clicking on a cell with a mole, move the mole to a new random cell
 sub on_mouse_button_up {
     my $self = shift;
     my $grid = $self->grid;
@@ -31,7 +32,7 @@ sub on_mouse_button_up {
     my $xy = [int(rand(640)), int(rand(480))];
     $grid->clear_cell_at($self->xy);
     $grid->set_cell_contents_at($xy, $mole);
-    $mole->xy($xy);
+    $mole->xy( $grid->cell_center_xy($xy) );
 }
 
 # ------------------------------------------------------------------------------
@@ -52,10 +53,10 @@ my $app = App->new(
     layer_manager_args => [layers => [qw(items cursor)]],
 );
 
-my $markers = Markers->new(size => $app->size, spacing => 80);
+my $markers = Markers->new(xy => [0, 0], size => $app->size, spacing => 80);
 
 my $mole = GameFrame::eg::GridMole->new(
-    xy       => [0, 0],
+    rect     => [0, 0, 22, 22],
     image    => 'mole',
     layer    => 'items',
     centered => 1,
@@ -68,6 +69,7 @@ my $grid = Grid->new(
 );
 
 my $cursor = GameFrame::eg::GridCursor->new(
+    rect     => [0, 0, 22, 26],
     image    => 'arrow',
     layer    => 'cursor',
     mole     => $mole,
