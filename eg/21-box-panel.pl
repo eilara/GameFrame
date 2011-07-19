@@ -9,15 +9,14 @@ use Moose;
 
 has color => (is => 'ro', required => 1);
 
-with 'GameFrame::Role::Rectangle';
 with qw(
     GameFrame::Role::Paintable
     GameFrame::Role::Rectangular
 );
 
 sub paint {
-    my ($self, $surface) = @_;
-    $surface->draw_rect($self->rect, $self->color);
+    my $self = shift;
+    $self->draw_rect($self->rect, $self->color);
 }
 
 # ------------------------------------------------------------------------------
@@ -25,8 +24,10 @@ sub paint {
 package GameFrame::eg::BoxPanelContainer;
 use Moose;
 
-with 'GameFrame::Role::Rectangle';
-with 'GameFrame::Role::Panel::Box';
+with qw(
+    GameFrame::Role::Rectangular
+    GameFrame::Role::Panel::Box
+);
 
 # ------------------------------------------------------------------------------
 
@@ -43,7 +44,7 @@ my $app = App->new(
 
 my $panel = GameFrame::eg::BoxPanelContainer->new(
     orientation => 'vertical',
-    size        => [640, 480],
+    rect        => [0, 0, 640, 480],
     child_defs  => [
         top_panel => {
             child_class => 'GameFrame::eg::BoxPanelChild',
@@ -52,8 +53,8 @@ my $panel = GameFrame::eg::BoxPanelContainer->new(
         },
         bottom_panel => {
             child_class => 'GameFrame::eg::BoxPanelContainer',
-            orientation => 'horizontal',
             h           => 80,
+            orientation => 'horizontal',
             child_defs  => [
                 left_panel => {
                     child_class => 'GameFrame::eg::BoxPanelChild',
@@ -74,5 +75,7 @@ $app->run;
 
 
 
+
+__END__
 
 

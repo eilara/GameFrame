@@ -15,6 +15,11 @@ has xy_vec => (is => 'rw', isa => Vector2D, required => 1, coerce => 1,
 
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
+
+    if (exists($args{x}) && exists($args{y})) {
+        $args{xy} = [$args{x}, $args{y}];
+    }
+
     $args{xy_vec} = delete $args{xy};
     return $class->$orig(%args);
 };

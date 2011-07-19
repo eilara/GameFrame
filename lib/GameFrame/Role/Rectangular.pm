@@ -22,10 +22,16 @@ with 'GameFrame::Role::Positionable';
 
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
+
     if (my $rect = delete $args{rect}) {
         $args{xy}   = [ @$rect[0,1] ];
         $args{size} = [ @$rect[2,3] ];
     }
+
+    if ((my $w = delete $args{w}) && (my $h = delete $args{h})) {
+        $args{size} = [$w, $h];
+    }
+
     $args{_size} = delete $args{size};
 
     if (my $centered = delete $args{centered}) {

@@ -62,7 +62,7 @@ around prepare_child_defs => sub {
     # pass 2: distribute position among children
     my $it2 = natatime 2, @defs;
     while (my ($name, $child_def) = $it2->()) {
-        $child_def->{$place} = $at;
+        $child_def->{$place}  = $at;
         $at                  += $child_def->{$size};
     }
 
@@ -90,7 +90,7 @@ sub _orientation_selectors {
     my $size                 = $is_horizontal? 'w': 'h';
     my $orth_size            = $is_horizontal? 'h': 'w';
     my $place                = $is_horizontal? 'x': 'y';
-    my $orth_place           = $is_horizontal? 'y': 'y';
+    my $orth_place           = $is_horizontal? 'y': 'x';
     return ($size, $orth_size, $place, $orth_place);
 }
 
