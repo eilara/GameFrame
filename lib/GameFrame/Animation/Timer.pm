@@ -58,9 +58,8 @@ has cycle_limit => (
 # provide a virtual clock for testing, or a shared clock for playing
 # with elastic time (TODO)
 # or just let each timer create its on clock, which is the default
-has clock => (is => 'ro', isa => Clock, required => 1,
-              handles => [qw(now build_periodic_timer)],
-              default => sub { Clock->new });
+has clock => (is => 'ro', isa => Clock, lazy_build => 1,
+              handles => [qw(now build_periodic_timer)]);
 
 has timer => (is => 'ro', lazy_build => 1, handles => {
     start_timer     => 'start',
@@ -92,11 +91,12 @@ has pause_start_time => (is => 'rw');
 # how much time was paused in this cycle
 has total_cycle_pause => (is => 'rw', default => 0);
 
+sub _build_clock { Clock->new }
+
 sub _build_timer {
     my $self = shift;
     weaken $self;
-    # build a timer with dummy $start_time and $timer_sleep, which we set
-    # before start()
+    # build a dummy timer which we reconfigure _on_first_timer_tick
     return $self->build_periodic_timer
         (0, 1, sub { $self->_on_timer_tick });
 }
@@ -117,8 +117,8 @@ sub _on_first_timer_tick {
     $cycle_start_time ||= $self->now;
     $self->cycle_start_time($cycle_start_time);
     $self->last_tick_time($cycle_start_time);
-    $self->set_timer($cycle_start_time, $self->cycle_sleep, 0);
     $self->total_sleep_computed(0);
+    $self->set_timer($cycle_start_time, $self->cycle_sleep, 0);
 }
 
 sub _on_timer_tick {

@@ -18,19 +18,18 @@ with qw(
 
 sub start {
     my $self = shift;
-    $self->move(to => sub { [0, 0] });
-    $self->hide;
+    $self->move_to([0,0]);
 }
 
-sub DEMOLISH { print "DEMOLISH ON $_[0]\n" }
+#sub DEMOLISH { print "DEMOLISH ON $_[0]\n" }
 
 # ------------------------------------------------------------------------------
 
 package GameFrame::eg::ActiveContainerWave;
 use Moose;
-use GameFrame::Time qw(interval);
+use Coro::AnyEvent; # for sleep, which is discouraged in anything but examples
 
-has last_message => (is => 'rw', default => 'all children active');
+has last_message => (is => 'rw', default => 'activating children');
 
 with qw(
     GameFrame::Role::Paintable
@@ -41,10 +40,10 @@ with qw(
 
 sub start {
     my $self = shift;
-    interval
-        times => 4,
-        sleep => 1,
-        step  => sub { $self->create_next_child };
+    for (1..4) {
+        Coro::AnyEvent::sleep 1;
+        $self->create_next_child; # SPAWN!
+    }
 }
 
 sub on_child_deactivate {
@@ -56,8 +55,8 @@ sub on_all_children_deactivated
     { shift->last_message("all children deactivated") }
 
 sub paint {
-    my ($self, $surface) = @_;
-    $surface->draw_gfx_text([400, 100], 0xFFFFFFFF, $self->last_message);
+    my $self = shift;
+    $self->draw_gfx_text([400, 100], 0xFFFFFFFF, $self->last_message);
 }
 
 # ------------------------------------------------------------------------------
@@ -76,9 +75,9 @@ my $app = App->new(
 my $wave = GameFrame::eg::ActiveContainerWave->new(
     child_args  => {
         child_class => 'GameFrame::eg::ActiveContainerChild',
-        xy          => [600, 400],
-        v           => 300,
-        image       => 'arrow',
+        rect        => [600, 400, 22, 22],
+        speed       => 300,
+        image       => 'mole',
     },
 );
 

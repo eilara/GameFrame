@@ -23,7 +23,7 @@ use lib "$Bin/../lib";
 
 package GameFrame::eg::ActiveCircle;
 use Moose;
-use Coro::Timer qw(sleep);
+use Coro::AnyEvent; # for sleep, which is discouraged in anything but examples
 
 has radius => (is => 'rw', default => 100);
 
@@ -38,11 +38,11 @@ sub start {
     for (1..2) {
         for my $r (1..100) {
             $self->radius(101 - $r);
-            sleep 1/60;
+            Coro::AnyEvent::sleep 1/60;
         }
         for my $r (1..100) {
             $self->radius($r);
-            sleep 1/60;
+            Coro::AnyEvent::sleep 1/60;
         }
     }
 }

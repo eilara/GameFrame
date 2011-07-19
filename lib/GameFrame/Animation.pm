@@ -92,9 +92,7 @@ compose_from Curve,
     prefix => 'curve',
     inject => sub {
         my $self = shift;
-        return (
-            from => $self->from,
-        );
+        return (from => $self->from);
     },
     has => {handles => [qw(
         solve_curve

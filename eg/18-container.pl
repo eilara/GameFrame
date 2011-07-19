@@ -39,15 +39,16 @@ use lib "$Bin/../lib";
 
 # ------------------------------------------------------------------------------
 
+# just a sprite 
+
 package GameFrame::eg::ContainerSpawnerChild;
 use Moose;
 
-with qw(
-    GameFrame::Role::Sprite
-    GameFrame::Role::SDLEventHandler
-);
+with 'GameFrame::Role::Sprite';
 
 # ------------------------------------------------------------------------------
+
+# a spawner which spawns children on click and keeps them forever
 
 package GameFrame::eg::ContainerSpawner;
 use Moose;

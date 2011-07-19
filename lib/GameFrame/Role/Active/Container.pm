@@ -21,6 +21,7 @@ use Coro;
 #       you dont need to keep strong refs anywhere
 #       true, a weak object set will do fine, but you still need notifications
 #       of deactivation perhaps?
+#       dont like it that active GOBs have TWO strong refs to them in the system
 
 with 'GameFrame::Role::Container';
 
