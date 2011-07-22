@@ -25,8 +25,8 @@ sub add_to_score {
 }
 
 after paint => sub {
-    my ($self, $surface) = @_;
-    $surface->draw_gfx_text($self->score_xy, 0xFFFF00FF, $self->score);
+    my $self = shift;
+    $self->draw_gfx_text($self->score_xy, 0xFFFF00FF, $self->score);
 };
 
 1;

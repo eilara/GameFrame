@@ -59,7 +59,7 @@ sub sequence {
 }
 
 # TODO patch SDLx to allow setting frame num
-# TODO horrible things will happen if you provite out of bound frames here
+# TODO horrible things will happen if you provide out of bound frames here
 sub current_frame {
     my ($self, $new_frame) = @_;
     my $sprite = $self->sprite;

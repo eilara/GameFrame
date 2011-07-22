@@ -7,8 +7,6 @@ use MooseX::Types::Moose qw(Num ArrayRef);
 use Math::Vector::Real;
 use GameFrame::Types qw(Vector2D);
 
-requires 'w'; # need width to size the health bar
-
 with qw(
     GameFrame::Role::Paintable
     GameFrame::Role::Living
@@ -34,9 +32,9 @@ after paint => sub {
     # draw black border
     $self->draw_rect([$x, $y, $w, $h + 2], 0x000000FF);
     # draw red background
-    $self->draw_rect([$x+1, $y+1, $w-2, 2], 0x9F0000FF);
+    $self->draw_rect([$x+1, $y+1, $w-2, $h], 0x9F0000FF);
     # green for health
-    $self->draw_rect([$x+1, $y+1, $hp_ratio*($w-2), 2], 0x009F00FF);
+    $self->draw_rect([$x+1, $y+1, $hp_ratio*($w-2), $h], 0x009F00FF);
 };
 
 1;

@@ -4,7 +4,7 @@ package GameFrame::Role::Figure;
 # will be rotated by the angle when drawn
 
 use Moose::Role;
-use Math::Trig;
+use GameFrame::Util::Vectors;
 
 has angle => (is => 'rw', default => 0);
 
@@ -13,33 +13,26 @@ with qw(
     GameFrame::Role::Positionable
 );
 
-sub draw_polygon {
-    my ($self, $surface, $color, @points) = @_;
+sub draw_polygon_polar {
+    my ($self, $color, @points) = @_;
     my $last_point = shift @points;
     push @points, $last_point; # make it a closed polygon
     for my $point (@points) {
-        $self->draw_line
-            ($surface, $color, $last_point, $point);
+        $self->draw_line_polar
+            ($color, $last_point, $point);
         $last_point = $point;
     }
 }
 
 # draws a line from 2 points defined by an angle and
 # a distance from my xy
-sub draw_line {
-    my ($self, $surface, $color, $from, $to) = @_;
-    my ($a1, $d1, $a2, $d2) = (@$from, @$to);
-    $surface->draw_line(
-        $self->translate_point_by_angle($a1 + $self->angle, $d1),
-        $self->translate_point_by_angle($a2 + $self->angle, $d2),
-        $color,
-        1,
-    );
-}
-
-sub translate_point_by_distance {
-    my ($self, $distance) = @_;
-    return $self->translate_point_by_angle($self->angle, $distance);
+sub draw_line_polar {
+    my ($self, $color, $from, $to) = @_;
+    my $angle = $self->angle;
+    my $xy    = $self->xy_vec;
+    $from     = $xy + VP($from->[0] + $angle, $from->[1]);
+    $to       = $xy + VP(  $to->[0] + $angle,   $to->[1]);
+    $self->draw_line([@$from], [@$to], $color, 1);
 }
 
 1;

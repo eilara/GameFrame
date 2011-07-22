@@ -23,7 +23,7 @@ sub start {
     while (1) {
         # note frames start with 1
         $self->animate_sprite(
-            from_to  => [1,4],
+            from_to  => [1, 4], # from frame 1 to 4 in the sequence
             duration => 2,
         );
     }

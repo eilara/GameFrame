@@ -4,10 +4,9 @@ package GameFrame::Animation::MoveTo;
 # even if it is moving with changing velocity, or if my velocity is changing
 
 use Moose;
-use Scalar::Util qw(weaken);
-use GameFrame::MooseX;
-use aliased 'GameFrame::Animation::Timeline';
 use aliased 'GameFrame::Animation::CycleLimit';
+
+extends 'GameFrame::Animation::Base';
 
 # target must do compute_destination, xy_vec, and speed
 has target => (is => 'ro', required => 1, weak_ref => 1,
@@ -15,33 +14,15 @@ has target => (is => 'ro', required => 1, weak_ref => 1,
 
 has [qw(next_xy last_dist)] => (is => 'rw');
 
-compose_from Timeline,
-    inject => sub {
-        my $self = shift;
-        weaken $self;
-        my $cycle_limit = CycleLimit->method_limit(check_move_limit => $self);
-        return (
-            cycle_limit => $cycle_limit,
-            provider    => $self,
-        );
-    },        
-    has => {handles => {
-        _start_animation            => 'start',
-        restart_animation           => 'restart',
-        stop_animation              => 'stop',
-        pause_animation             => 'pause',
-        resume_animation            => 'resume',
-        is_animation_started        => 'is_timer_active',
-        wait_for_animation_complete => 'wait_for_animation_complete',
-    }};
+sub _build_cycle_limit {
+    my $self = shift;
+    return CycleLimit->method_limit(check_move_limit => $self);
+}
 
-with 'GameFrame::Role::Animation';
-
-sub start_animation {
+before start_animation => sub {
     my $self = shift;
     $self->$_(undef) for qw(next_xy last_dist);
-    $self->_start_animation;
-}
+};
 
 sub timer_tick {
     my ($self, $elapsed, $delta) = @_;

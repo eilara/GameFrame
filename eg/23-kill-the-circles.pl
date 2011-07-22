@@ -7,6 +7,151 @@ use lib "$Bin/../lib";
 
 # ------------------------------------------------------------------------------
 
+package GameFrame::eg::CircleKillMissile;
+use Moose;
+use Math::Trig;
+
+with qw(
+    GameFrame::Role::Figure
+    GameFrame::Role::Movable
+    GameFrame::Role::Active::Child
+);
+
+has to    => (is => 'ro', required => 1);
+has color => (is => 'rw', default  => 0xFFFFFFFF);
+
+sub start {
+    my $self = shift;
+    my $to = $self->to;
+    $self->move_to($self->to);
+}
+
+sub paint {
+    my $self = shift;
+    $self->draw_polygon_polar(
+       $self->color,
+       [pi*0, 8], [pi*3/4, 5], [pi*5/4, 5],
+   );
+}
+
+# ------------------------------------------------------------------------------
+package GameFrame::eg::CircleKiller;
+use Moose;
+use GameFrame::Util::Vectors;
+
+has last_hit_time => (is => 'rw', default => -1);
+
+with map { "GameFrame::Role::$_" } qw(
+    SDLEventHandler
+    Active
+    Figure
+    Movable
+    HealthBar
+    Scoreable
+    Container::Simple
+    Active::Container
+);
+
+sub start {
+    my $self = shift;
+    $self->wait_for_death;
+}
+
+sub paint {
+    my $self = shift;
+    # spaceship
+    $self->draw_polygon_polar(
+       0xFFFFFFFF,
+       [pi*0, 20], [pi*3/4, 15], [pi*5/4, 15],
+   );
+   # paint shield, flash red if recently hit, don't if dead
+   return unless $self->is_alive;
+   my $is_hit = (time - $self->last_hit_time) < 0.1;
+   my $color  = $is_hit? 0xFF0000FF: 0x0000FFFF;
+   $self->draw_circle($self->xy, 25, $color, 1);
+}
+
+# when mouse moves we set our angle
+sub on_mouse_motion {
+    my ($self, $x, $y) = @_;
+    my $angle = angle_between $self->xy_vec, V($x, $y);
+    return unless defined $angle; # cursor too close to center
+    $self->angle($angle);
+}
+
+# fire!
+sub on_mouse_button_up {
+    my $self = shift;
+    # cant fire more than 4 missiles at once
+    return if $self->child_count >= 4;
+
+    my $angle = $self->angle;
+    my $from  = $self->xy_vec + VP($angle, 25);
+    my $to    = $self->xy_vec + VP($angle, 300); # missle range=300
+
+    $self->create_next_child(
+        xy_vec => $from,
+        to     => $to,
+        angle  => $angle,
+    );
+}
+
+#sub on_hit { shift->last_hit_time(time) }
+#
+#sub on_death {
+#    my $self = shift;
+#    async {
+#        $self->move_to([320, 480]);
+#        exit;
+#    };
+#}
+
+# ------------------------------------------------------------------------------
+
+package main;
+use strict;
+use warnings;
+use aliased 'GameFrame::App';
+
+my $app = App->new(
+    title    => 'Kill the Circles',
+    bg_color => 0x0,
+);
+
+{
+    # the player is the circle killer, its children are missiles
+    my $player = GameFrame::eg::CircleKiller->new(
+        xy                => [320, 200],
+        start_hp          => 50,
+        health_bar        => [-13, -25, 22, 2],
+        speed             => 100, # speed when dropping to death
+        child_args        => {
+            child_class => 'GameFrame::eg::CircleKillMissile',
+            speed       => 200,
+        },
+    );
+}
+# 
+ # # spawns evil circles
+ # my $spawner = GameFrame::eg::CircleSpawner->new(
+ #     child_args  => {
+ #         child_class => 'GameFrame::eg::EvilCircle',
+ #         player      => $player,
+ #     },
+ # );
+ # 
+ # # detects missle <-> circle collisions and updates score
+ # my $detector = GameFrame::eg::CircleMissileCollisionDetector->new(
+ #    spawner => $spawner,
+ #    player  => $player,
+ # );
+ # 
+$app->run;
+
+
+__END__
+
+
 package GameFrame::eg::CircleMissileCollisionDetector;
 use Moose;
 use Coro;
@@ -126,142 +271,4 @@ sub start {
 }
 
 # ------------------------------------------------------------------------------
-
-package GameFrame::eg::CircleKillMissile;
-use Moose;
-use Math::Trig;
-
-with 'GameFrame::Role::Point';
-with qw(
-    GameFrame::Role::Figure
-    GameFrame::Role::Movable
-    GameFrame::Role::Active::Child
-);
-
-has to    => (is => 'ro', required => 1);
-has color => (is => 'rw', default  => 0xFFFFFFFF);
-
-sub start {
-    my $self = shift;
-    my $to = $self->to;
-    $self->move(to => sub { $to });
-}
-
-sub paint {
-    my ($self, $surface) = @_;
-    $self->draw_polygon(
-       $surface, $self->color,
-       [pi*0, 8], [pi*3/4, 5], [pi*5/4, 5],
-   );
-}
-
-# ------------------------------------------------------------------------------
-
-package GameFrame::eg::CircleKiller;
-use Moose;
-use Coro;
-use Math::Trig;
-use Time::HiRes qw(time);
-
-# for benefit of health bar
-sub w { 25 }
-
-has last_hit_time => (is => 'rw', default => -1);
-
-with 'GameFrame::Role::Point';
-
-with qw(
-    GameFrame::Role::SDLEventHandler
-    GameFrame::Role::Figure
-    GameFrame::Role::Container::Simple
-    GameFrame::Role::Active::Container
-    GameFrame::Role::HealthBar
-    GameFrame::Role::Scoreable
-    GameFrame::Role::Movable
-);
-
-sub paint {
-    my ($self, $surface) = @_;
-    # spaceship
-    $self->draw_polygon(
-       $surface, 0xFFFFFFFF,
-       [pi*0, 20], [pi*3/4, 15], [pi*5/4, 15],
-   );
-   # paint shield, flash red if recently hit, don't if dead
-   return unless $self->is_alive;
-   my $is_hit = (time - $self->last_hit_time) < 0.1;
-   my $color  = $is_hit? 0xFF0000FF: 0x0000FFFF;
-   $surface->draw_circle($self->xy, 25, $color, 1);
-}
-
-# when mouse moves we set our angle
-sub on_mouse_motion {
-    my ($self, $x, $y) = @_;
-    my $angle = $self->compute_angle_to($x, $y);
-    return unless defined $angle; # cursor too close to center
-    $self->angle($angle);
-}
-
-# fire!
-sub on_mouse_button_up {
-    my $self = shift;
-    # cant fire more than 4 missiles at once
-    return if $self->child_count >= 4;
-    $self->create_next_child(
-        xy    => $self->translate_point_by_distance(25),
-        to    => $self->translate_point_by_distance(300), # range of missile
-        angle => $self->angle,
-    );
-}
-
-sub on_hit { shift->last_hit_time(time) }
-
-sub on_death {
-    my $self = shift;
-    async {
-        $self->move(to => sub { [320, 480] });
-        exit;
-    };
-}
-
-# ------------------------------------------------------------------------------
-
-package main;
-use strict;
-use warnings;
-use aliased 'GameFrame::App';
-
-my $app = App->new(
-    title    => 'Kill the Circles',
-    bg_color => 0x0,
-);
-
-# the player is the circle killer, its children are missiles
-my $player = GameFrame::eg::CircleKiller->new(
-    xy                => [320, 200],
-    start_hp          => 50,
-    health_bar_offset => [-13, -25],
-    v                 => 100, # velocity when dropping to death
-    child_args        => {
-        child_class => 'GameFrame::eg::CircleKillMissile',
-        v           => 100,
-    },
-);
-
-# spawns evil circles
-my $spawner = GameFrame::eg::CircleSpawner->new(
-    child_args  => {
-        child_class => 'GameFrame::eg::EvilCircle',
-        player      => $player,
-    },
-);
-
-# detects missle <-> circle collisions and updates score
-my $detector = GameFrame::eg::CircleMissileCollisionDetector->new(
-   spawner => $spawner,
-   player  => $player,
-);
-
-$app->run;
-
 

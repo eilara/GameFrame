@@ -40,8 +40,7 @@ use strict;
 use warnings;
 use FindBin qw($Bin);
 use aliased 'GameFrame::App';
-use Math::Vector::Real; # for V() constructor
-use Math::Trig;         # for pi
+use GameFrame::Util::Vectors; # for V() constructor and pi constant
 
 my $app = App->new(
     title    => 'Animated Role',

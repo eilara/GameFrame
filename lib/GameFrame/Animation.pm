@@ -40,11 +40,9 @@ package GameFrame::Animation;
 # curve to compute the animated value
 
 use Moose;
-use Scalar::Util qw(weaken);
 use MooseX::Types::Moose qw(Bool Num Int Str ArrayRef);
 use Math::Vector::Real;
 use GameFrame::MooseX;
-use aliased 'GameFrame::Animation::Timeline';
 use aliased 'GameFrame::Animation::CycleLimit';
 use aliased 'GameFrame::Animation::Proxy::Factory' => 'ProxyFactory';
 use aliased 'GameFrame::Animation::Proxy';
@@ -54,32 +52,11 @@ use GameFrame::Animation::Curve::Circle;
 use GameFrame::Animation::Curve::Spiral;
 use GameFrame::Animation::Easing;
 
+extends 'GameFrame::Animation::Base';
+
 has from     => (is => 'ro', lazy_build => 1);
 has duration => (is => 'ro', isa => Num, required => 1);
 has ease     => (is => 'ro', isa => Str, default => 'linear');
-
-compose_from Timeline,
-    inject => sub {
-        my $self = shift;
-        weaken $self; # don't want args to hold strong ref to self
-        my $speed = $self->curve_length / $self->duration;
-        return (
-            cycle_limit => CycleLimit->time_period($self->duration),
-            provider    => $self,
-            $self->compute_timer_sleep($speed),
-        );
-    },
-    has => {handles => {
-        start_animation             => 'start',
-        restart_animation           => 'restart',
-        stop_animation              => 'stop',
-        pause_animation             => 'pause',
-        resume_animation            => 'resume',
-        is_animation_started        => 'is_timer_active',
-        wait_for_animation_complete => 'wait_for_animation_complete',
-        is_reversed_dir             => 'is_reversed_dir',
-    },
-};
 
 compose_from Proxy,
     has => {handles => [qw(
@@ -100,7 +77,16 @@ compose_from Curve,
         curve_length
     )]};
 
-with 'GameFrame::Role::Animation';
+sub _suggest_timer_sleep {
+    my $self = shift;
+    my $speed = $self->curve_length / $self->duration;
+    return $self->compute_timer_sleep($speed);
+}
+
+sub _build_cycle_limit {
+    my $self = shift;
+    return CycleLimit->time_period($self->duration);
+}
 
 sub _build_from {
     my $self = shift;

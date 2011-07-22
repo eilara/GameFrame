@@ -85,12 +85,12 @@ sub find_child_at {
 }
 
 sub _orientation_selectors {
-    my $self                 = shift;    
-    my $is_horizontal        = $self->is_horizontal;
-    my $size                 = $is_horizontal? 'w': 'h';
-    my $orth_size            = $is_horizontal? 'h': 'w';
-    my $place                = $is_horizontal? 'x': 'y';
-    my $orth_place           = $is_horizontal? 'y': 'x';
+    my $self          = shift;    
+    my $is_horizontal = $self->is_horizontal;
+    my $size          = $is_horizontal? 'w': 'h';
+    my $orth_size     = $is_horizontal? 'h': 'w';
+    my $place         = $is_horizontal? 'x': 'y';
+    my $orth_place    = $is_horizontal? 'y': 'x';
     return ($size, $orth_size, $place, $orth_place);
 }
 

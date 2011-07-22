@@ -5,7 +5,7 @@ package GameFrame::Role::Positionable;
 # you can override xy_trigger which will be called
 # when position is changed
 # HACK underscore prefix return Vector2D, no underscore return array ref
-#      because SDL methods cant take Vector2D, for which I should send a patch
+#      because SDL methods cant take Vector2D, which they should
 
 use Moose::Role;
 use GameFrame::Types qw(Vector2D);
@@ -20,7 +20,10 @@ around BUILDARGS => sub {
         $args{xy} = [$args{x}, $args{y}];
     }
 
-    $args{xy_vec} = delete $args{xy};
+    if (my $xy = delete $args{xy}) {
+        $args{xy_vec} = $xy;
+    }
+
     return $class->$orig(%args);
 };
 
@@ -53,49 +56,3 @@ sub xy_trigger {}
 
 1;
 
-__END__
-
-
-sub distance_to {
-    my ($self, $to_xy) = @_;
-    return distance(@{$self->xy}, @$to_xy);
-}
-
-sub translate_point {
-    my ($self, $axis, $by_1, $by_2) = @_;
-    my ($x, $y) = @{ $self->xy };
-    return $axis eq 'x'? [$x + $by_1, $y]:
-           $axis eq 'y'? [$x        , $y + $by_1]:
-                         [$x + $by_1, $y + $by_2];
-}
-
-sub self_translate_point {
-    my ($self, @args) = @_;
-    $self->xy($self->translate_point(@args));
-}
-
-sub translate_point_by_angle {
-    my ($self, $angle, $distance) = @_;
-    my ($x, $y) = @{ $self->xy };
-    return [
-        $x + $distance * cos($angle),
-        $y + $distance * sin($angle),
-    ];
-}
-
-sub compute_angle_to {
-    my ($self, $to_x, $to_y) = @_;
-    my ($x, $y) = @{ $self->xy };
-    my ($dx, $dy) = ($to_x - $x, $to_y - $y);
-    # $to is too close to compute angle
-    return undef if abs($dx) < 0.5 and abs($dy) < 0.5;
-    return atan2($dy, $dx);
-}
-
-1;
-
-__END__
-
-
-# use Math::Trig;
-use GameFrame::Util qw(distance);

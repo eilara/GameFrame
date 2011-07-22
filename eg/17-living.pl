@@ -7,7 +7,7 @@ use lib "$Bin/../lib";
 
 package GameFrame::eg::LivingSprite;
 use Moose;
-use Math::Vector::Real;
+use GameFrame::Util::Vectors;
 
 with map { "GameFrame::Role::$_" } qw(
     SDLEventHandler

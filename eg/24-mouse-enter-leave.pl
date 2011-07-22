@@ -3,6 +3,7 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
 # demo of reacting to mouse enter/leave in rectangular event sinks
+#
 # panels display their last event, note how mouse enter/leave are
 # received
 
