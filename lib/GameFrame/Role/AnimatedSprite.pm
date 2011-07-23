@@ -4,7 +4,6 @@ package GameFrame::Role::AnimatedSprite;
 
 use Moose::Role;
 use MooseX::Types::Moose qw(Str ArrayRef HashRef);
-use aliased 'GameFrame::Animation';
 use aliased 'GameFrame::Animation::Proxy::Int' => 'IntProxy';
 
 has sequences =>

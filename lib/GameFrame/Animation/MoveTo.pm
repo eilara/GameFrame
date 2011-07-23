@@ -3,6 +3,8 @@ package GameFrame::Animation::MoveTo;
 # MoveTo animation - animate a positionable towards another positionable
 # even if it is moving with changing velocity, or if my velocity is changing
 
+# TODO add accuracy
+
 use Moose;
 use aliased 'GameFrame::Animation::CycleLimit';
 
