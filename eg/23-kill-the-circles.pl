@@ -9,32 +9,36 @@ use lib "$Bin/../lib";
 
 package GameFrame::eg::EvilCircle;
 use Moose;
-use GameFrame::Util::Vectors;
+use MooseX::Types::Moose qw(Int);
+use GameFrame::MooseX;
+use aliased 'GameFrame::Animation';
 
 has player => (is => 'ro', required => 1, weak_ref => 1);
-has speed  => (is => 'ro', required => 1); # velocity of expansion
-has radius => (is => 'rw', default  => 1); # start small, then grow
+has radius => (is => 'rw', isa => Int, default  => 1); # start small, then grow
 has color  => (is => 'rw', default  => 0xFFFFFFFF);
 
 with qw(
+    GameFrame::Role::Living
     GameFrame::Role::Paintable
     GameFrame::Role::Positionable
-    GameFrame::Role::Animated
     GameFrame::Role::Active::Child
 );
 
+compose_from Animation,
+    inject => sub { (target => shift) },
+    has    => {
+        handles => [qw(start_animation_and_wait)],
+    };
+
 sub start {
     my $self = shift;
-    # expand until we reach player shield
-    my $distance = abs($self->xy_vec - V(320, 200)) - 25;
-    $self->animate({
-        attribute => 'radius',
-        to        => $distance,
-        duration  => ($distance / $self->speed),
-        ease      => 'swing',
-    });
-    # now hit player with 10 HP
-#  $self->player->hit(10);
+    $self->start_animation_and_wait;
+    # if we are dead, then we did not get to player
+    return unless $self->is_alive;
+
+    $self->player->hit(10); # now hit player with 10 HP
+    $self->accept_death;    # and die proudly knowing we have done
+                            # our duty
 }
 
 sub paint {
@@ -62,10 +66,19 @@ sub start {
 
 around next_child_args => sub {
     my ($orig, $self) = @_;
+    my $idx    = $self->next_child_idx;
+    my $speed  = min(200, 20 + $idx*3);
+    my $xy_vec = random_edge_vector V(640, 480);
+    my $dist   = abs($xy_vec - V(320, 200)) - 25;
     return {
         %{$self->$orig},
-        speed  => min(200, 20 + $self->next_child_idx*3), # increase speed
-        xy_vec => random_edge_vector V(640, 480),
+        xy_vec         => $xy_vec,
+        speed          => $speed,
+        animation_args => [
+            attribute => 'radius',
+            to        => $dist,
+            duration  => ($dist / $speed),
+        ],
     };
 };
 
@@ -193,20 +206,11 @@ my $spawner = GameFrame::eg::CircleSpawner->new(
     child_args  => {
         child_class => 'GameFrame::eg::EvilCircle',
         player      => $player,
+        start_hp    => 1,
     },
 );
 
-
-
- 
- # # detects missle <-> circle collisions and updates score
- # my $detector = GameFrame::eg::CircleMissileCollisionDetector->new(
- #    spawner => $spawner,
- #    player  => $player,
- # );
- # 
 $app->run;
-
 
 __END__
 

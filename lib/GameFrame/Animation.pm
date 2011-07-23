@@ -41,6 +41,7 @@ package GameFrame::Animation;
 
 use Moose;
 use MooseX::Types::Moose qw(Bool Num Int Str ArrayRef);
+use Scalar::Util qw(weaken);
 use Math::Vector::Real;
 use GameFrame::MooseX;
 use aliased 'GameFrame::Animation::CycleLimit';
@@ -134,6 +135,7 @@ around BUILDARGS => sub {
         attribute => delete($args{attribute}),
         @{ $args{proxy_args} || []},
     ];
+    weaken $args{proxy_args}->[1]; # dont want strong ref to target in args
 
     $args{proxy_class} ||= ProxyFactory->find_proxy
         (@{ $args{proxy_args} });

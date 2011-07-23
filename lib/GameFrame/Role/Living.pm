@@ -39,6 +39,14 @@ has death_signal => (
 sub on_hit   {}
 sub on_death {}
 
+sub accept_death {
+    my $self = shift;
+    $self->hp(0);
+    $self->is_alive(0);
+    $self->on_death;
+    $self->broadcast_death;
+}
+
 sub wait_for_death {
     my $self = shift;
     return unless $self->is_alive;
@@ -52,11 +60,7 @@ sub hit {
     $hp = 0 if $hp < 0;
     $self->hp($hp);
     $self->on_hit;
-    if ($hp == 0) {
-        $self->is_alive(0);
-        $self->on_death;
-        $self->broadcast_death;
-    }
+    $self->accept_death if $hp == 0;
 }
 
 sub hp_ratio {
