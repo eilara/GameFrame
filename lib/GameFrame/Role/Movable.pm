@@ -43,6 +43,7 @@ sub move_to {
 }
 
 sub start_motion { shift->motion->start_animation }
+sub stop_motion  { shift->motion->stop_animation }
 
 sub set_to {
     my ($self, $to) = @_;

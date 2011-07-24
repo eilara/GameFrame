@@ -7,111 +7,6 @@ use lib "$Bin/../lib";
 
 # ------------------------------------------------------------------------------
 
-package GameFrame::eg::EvilCircle;
-use Moose;
-use MooseX::Types::Moose qw(Int);
-use GameFrame::MooseX;
-use aliased 'GameFrame::Animation';
-
-has player => (is => 'ro', required => 1, weak_ref => 1);
-has radius => (is => 'rw', isa => Int, default  => 1); # start small, then grow
-has color  => (is => 'rw', default  => 0xFFFFFFFF);
-
-with qw(
-    GameFrame::Role::Living
-    GameFrame::Role::Paintable
-    GameFrame::Role::Positionable
-    GameFrame::Role::Active::Child
-);
-
-compose_from Animation,
-    inject => sub { (target => shift) },
-    has    => {
-        handles => [qw(start_animation_and_wait)],
-    };
-
-sub start {
-    my $self = shift;
-    $self->start_animation_and_wait;
-    # if we are dead, then we did not get to player
-    return unless $self->is_alive;
-
-    $self->player->hit(10); # now hit player with 10 HP
-    $self->accept_death;    # and die proudly knowing we have done
-                            # our duty
-}
-
-sub paint {
-    my $self = shift;
-    $self->draw_circle($self->xy, $self->radius, $self->color, 1);
-}
-
-# ------------------------------------------------------------------------------
-
-package GameFrame::eg::CircleSpawner;
-use Moose;
-use List::Util qw(min);
-use GameFrame::Util::Vectors;
-
-with qw(
-    GameFrame::Role::Container::Simple
-    GameFrame::Role::Active
-    GameFrame::Role::Spawner
-);
-
-sub start {
-    my $self = shift;
-    $self->spawn(duration => 30, waves => 60);
-}
-
-around next_child_args => sub {
-    my ($orig, $self) = @_;
-    my $idx    = $self->next_child_idx;
-    my $speed  = min(200, 20 + $idx*3);
-    my $xy_vec = random_edge_vector V(640, 480);
-    my $dist   = abs($xy_vec - V(320, 200)) - 25;
-    return {
-        %{$self->$orig},
-        xy_vec         => $xy_vec,
-        speed          => $speed,
-        animation_args => [
-            attribute => 'radius',
-            to        => $dist,
-            duration  => ($dist / $speed),
-        ],
-    };
-};
-
-# ------------------------------------------------------------------------------
-
-package GameFrame::eg::CircleKillMissile;
-use Moose;
-use Math::Trig;
-
-with qw(
-    GameFrame::Role::Figure
-    GameFrame::Role::Movable
-    GameFrame::Role::Active::Child
-);
-
-has to    => (is => 'ro', required => 1);
-has color => (is => 'rw', default  => 0xFFFFFFFF);
-
-sub start {
-    my $self = shift;
-    my $to = $self->to;
-    $self->move_to($self->to);
-}
-
-sub paint {
-    my $self = shift;
-    $self->draw_polygon_polar(
-       $self->color,
-       [pi*0, 8], [pi*3/4, 5], [pi*5/4, 5],
-   );
-}
-
-# ------------------------------------------------------------------------------
 package GameFrame::eg::CircleKiller;
 use Moose;
 use GameFrame::Util::Vectors;
@@ -179,6 +74,128 @@ sub on_hit { shift->last_hit_time(time) }
 
 # ------------------------------------------------------------------------------
 
+package GameFrame::eg::CircleKillMissile;
+use Moose;
+use Math::Trig;
+
+with qw(
+    GameFrame::Role::Figure
+    GameFrame::Role::Movable
+    GameFrame::Role::Active::Child
+);
+
+has to    => (is => 'ro', required => 1);
+has color => (is => 'rw', default  => 0xFFFFFFFF);
+
+sub start {
+    my $self = shift;
+    my $to = $self->to;
+    $self->move_to($self->to);
+}
+
+sub collide_with_circle {
+    my $self = shift;
+    $self->stop_motion;
+}
+
+sub paint {
+    my $self = shift;
+    $self->draw_polygon_polar(
+       $self->color,
+       [pi*0, 8], [pi*3/4, 5], [pi*5/4, 5],
+   );
+}
+
+
+# ------------------------------------------------------------------------------
+
+package GameFrame::eg::CircleSpawner;
+use Moose;
+use List::Util qw(min);
+use GameFrame::Util::Vectors;
+
+with qw(
+    GameFrame::Role::Container::Simple
+    GameFrame::Role::Active
+    GameFrame::Role::Spawner
+);
+
+sub start {
+    my $self = shift;
+    # 60 waves in 30 seconds
+    $self->spawn(duration => 30, waves => 60);
+}
+
+around next_child_args => sub {
+    my ($orig, $self) = @_;
+    my $idx    = $self->next_child_idx;
+    my $speed  = min(200, 20 + $idx*3);
+    my $xy_vec = random_edge_vector V(640, 480);
+    my $dist   = abs($xy_vec - V(320, 200)) - 25;
+    return {
+        %{$self->$orig},
+        xy_vec         => $xy_vec,
+        speed          => $speed,
+        animation_args => [
+            attribute => 'radius',
+            to        => $dist,
+            duration  => ($dist / $speed),
+        ],
+    };
+};
+
+# ------------------------------------------------------------------------------
+
+package GameFrame::eg::EvilCircle;
+use Moose;
+use MooseX::Types::Moose qw(Int);
+use GameFrame::MooseX;
+use aliased 'GameFrame::Animation';
+
+has player => (is => 'ro', required => 1, weak_ref => 1);
+has radius => (is => 'rw', isa => Int, default  => 1); # start small, then grow
+has color  => (is => 'rw', default  => 0xFFFFFFFF);
+
+with qw(
+    GameFrame::Role::Living
+    GameFrame::Role::Paintable
+    GameFrame::Role::Positionable
+    GameFrame::Role::Active::Child
+);
+
+compose_from Animation,
+    inject => sub { (target => shift) },
+    has    => {
+        handles => [qw(start_animation_and_wait)],
+    };
+
+sub start {
+    my $self = shift;
+    $self->start_animation_and_wait;
+    # if we are dead, then we did not get to player
+    return unless $self->is_alive;
+
+    $self->player->hit(10); # now hit player with 10 HP
+}
+
+sub collide_with_missile {
+    my $self = shift;
+    $self->accept_death;
+    $self->stop_animation;
+}
+
+sub paint {
+    my $self = shift;
+    $self->draw_circle($self->xy, $self->radius, $self->color, 1);
+}
+
+# ------------------------------------------------------------------------------
+
+package GameFrame::eg::CircleMissileCollisionDetector;
+use Moose;
+
+# ------------------------------------------------------------------------------
+
 package main;
 use strict;
 use warnings;
@@ -189,6 +206,9 @@ my $app = App->new(
     bg_color => 0x0,
 );
 
+# detects collisions
+my $detector = GameFrame::eg::CircleMissileCollisionDetector->new;
+
 # the player is the circle killer, its children are missiles
 my $player = GameFrame::eg::CircleKiller->new(
     xy                => [320, 200],
@@ -198,6 +218,7 @@ my $player = GameFrame::eg::CircleKiller->new(
     child_args        => {
         child_class => 'GameFrame::eg::CircleKillMissile',
         speed       => 200,
+        detector    => $detector,
     },
 );
 
@@ -207,6 +228,7 @@ my $spawner = GameFrame::eg::CircleSpawner->new(
         child_class => 'GameFrame::eg::EvilCircle',
         player      => $player,
         start_hp    => 1,
+        detector    => $detector,
     },
 );
 
