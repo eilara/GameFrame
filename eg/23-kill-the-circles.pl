@@ -79,22 +79,31 @@ use Moose;
 use Math::Trig;
 
 with qw(
+    GameFrame::Role::Living
     GameFrame::Role::Figure
     GameFrame::Role::Movable
     GameFrame::Role::Active::Child
 );
 
-has to    => (is => 'ro', required => 1);
-has color => (is => 'rw', default  => 0xFFFFFFFF);
+has detector => (is => 'ro', required => 1);
+has to       => (is => 'ro', required => 1);
+has color    => (is => 'rw', default  => 0xFFFFFFFF);
 
 sub start {
     my $self = shift;
+    $self->detector->missile_fired($self);
     my $to = $self->to;
     $self->move_to($self->to);
+
+    return unless $self->is_alive; # if we are dead, then we failed and are lost
+                                   # no circle was hit by this missile
+
+    $self->detector->missile_lost($self);
 }
 
 sub collide_with_circle {
     my $self = shift;
+    $self->accept_death;
     $self->stop_motion;
 }
 
@@ -105,7 +114,6 @@ sub paint {
        [pi*0, 8], [pi*3/4, 5], [pi*5/4, 5],
    );
 }
-
 
 # ------------------------------------------------------------------------------
 
@@ -152,30 +160,32 @@ use MooseX::Types::Moose qw(Int);
 use GameFrame::MooseX;
 use aliased 'GameFrame::Animation';
 
-has player => (is => 'ro', required => 1, weak_ref => 1);
-has radius => (is => 'rw', isa => Int, default  => 1); # start small, then grow
-has color  => (is => 'rw', default  => 0xFFFFFFFF);
+has detector => (is => 'ro', required => 1);
+has player   => (is => 'ro', required => 1, weak_ref => 1);
+has speed    => (is => 'ro', required => 1);                # for benefit of detector
+has radius   => (is => 'rw', isa => Int, default  => 1);    # start small, then grow
+has color    => (is => 'rw', default  => 0xFFFFFFFF);
 
 with qw(
-    GameFrame::Role::Living
     GameFrame::Role::Paintable
     GameFrame::Role::Positionable
+    GameFrame::Role::Living
     GameFrame::Role::Active::Child
 );
 
 compose_from Animation,
     inject => sub { (target => shift) },
-    has    => {
-        handles => [qw(start_animation_and_wait)],
-    };
+    has    => {handles => [qw(start_animation_and_wait stop_animation)]};
 
 sub start {
     my $self = shift;
-    $self->start_animation_and_wait;
-    # if we are dead, then we did not get to player
-    return unless $self->is_alive;
+    $self->detector->circle_spawned($self);
 
-    $self->player->hit(10); # now hit player with 10 HP
+    $self->start_animation_and_wait;
+    return unless $self->is_alive; # if we are dead, then we did not get to player
+    $self->player->hit(10);        # if we are alive, hit player
+
+    $self->detector->circle_reached_goal($self);
 }
 
 sub collide_with_missile {
@@ -193,6 +203,106 @@ sub paint {
 
 package GameFrame::eg::CircleMissileCollisionDetector;
 use Moose;
+use Set::Object::Weak qw(weak_set);
+
+has [qw(circles missiles)] => (is => 'ro', default => sub { weak_set });
+
+sub circle_spawned {
+    my ($self, $circle) = @_;
+#    foreach my $missile ($self->missiles->members) {
+#        my $time_to_impact = compute_time_to_impact($missile, $circle);
+#        next unless defined $time_to_impact;
+#        $self->add_collision($missile, $circle, $time_to_impact);
+#    }
+    $self->circles->insert($circle);
+}
+
+sub circle_reached_goal {
+    my ($self, $circle) = @_;
+    $self->circles->remove($circle);
+}
+
+sub missile_fired {
+    my ($self, $missile) = @_;
+    $self->missiles->insert($missile);
+}
+
+sub missile_lost {
+    my ($self, $missile) = @_;
+    $self->missiles->remove($missile);
+}
+
+sub add_collision {
+    my $self = shift;
+}
+
+# TODO - missile on circle center
+sub compute_time_to_impact {
+    my ($missile, $circle) = @_;
+
+    my $MISSILE_RADIUS = 8;
+
+    # if and when does line between m_xy_1,m_xy_2 moving at m_v ...
+    my $m_xy_1 = $missile->xy_vec;
+    my $m_xy_2 = $missile->to;
+    my $m_s    = $missile->speed;
+
+    # ...intersect circle with center c_xy and radius growing at c_v, currently at c_r
+    my $c_xy   = $circle->xy_vec;
+    my $c_v    = $circle->speed;
+    my $c_r    = $circle->radius;
+
+    my $m_to_c = $m_xy_1 - $c_xy;             # current diff vec to circle center
+    my $m_dir  = $m_xy_2 - $m_xy_1;           # missile dir vector
+    my $m_v    = $m_s * $m_dir / abs($m_dir); # missile velocity vector
+
+    # assume a collision in time $t
+    #
+    # missile will be at: 
+    #                            $m_at_t = $m_xy_1 + $m_v * $t
+    # circle radius will be: 
+    #                          $c_r_at_t = $c_r + $c_v * $t
+    # and $t must satisfy:
+    #                          $c_r_at_t = |$m_at_t - $c_xy|
+    # solving for $t:
+    #                                     $c_r_at_t**2 = abs2($m_xy_1 + $m_v * $t - $c_xy)
+    #                            ($c_r + $c_v * $t)**2 = abs2($m_to_c + $m_v * $t)
+    # $c_r**2 + 2 * $c_v * $t * $c_r + $c_v**2 * $t**2 = ($m_to_c_x + $m_v_x * $t)**2 + ...
+    #                                                  = $t**2 * abs2($m_v) + 
+    #                                                    $t    * 2 * ($m_v_x * $m_to_c_x + $m_v_y * $m_to_c_y) + 
+    #                                                          abs2($m_to_c)
+    #                                                0 = $t**2 * (abs2($m_v) - $c_v**2) + 
+    #                                                    $t    * 2 * ($m_v_x * $m_to_c_x + $m_v_y * $m_to_c_y - $c_v * $c_r) + 
+    #                                                          abs2($m_to_c) - $c_r**2
+    #                                                0 = $t**2 * $A + $t * $B + $C
+
+    my $A = abs2($m_v) - $c_v**2;
+    my $B = 2 * ($m_v->[0] * $m_to_c->[0] + $m_v->[1] * $m_to_c->[1] - $c_v * $c_r);
+    my $C = abs2($m_to_c) - $c_r**2;
+
+    # collide now if missile is less than radius away from circle now
+    return 0 if $C <= $MISSILE_RADIUS;
+
+    my (@t) = solve_quadratic($A, $B, $C);
+
+    return undef unless scalar @t; # no solutions
+}
+
+sub solve_quadratic {
+    my ($A, $B, $C) = @_;
+    my $B24AC = $B**2 - 4 * $A * $C;
+
+    if ($A < 0.001) {
+        my $t = -1 * $B / $C;
+        return $t;
+    }
+    return undef if $B24AC < 0; # will never meet
+
+    my $SQ = sqrt $B24AC;
+    my $t1 = (-1*$B + $SQ) / (2 * $A);
+    my $t2 = (-1*$B - $SQ) / (2 * $A);
+
+}
 
 # ------------------------------------------------------------------------------
 
@@ -218,6 +328,7 @@ my $player = GameFrame::eg::CircleKiller->new(
     child_args        => {
         child_class => 'GameFrame::eg::CircleKillMissile',
         speed       => 200,
+        start_hp    => 1,
         detector    => $detector,
     },
 );
