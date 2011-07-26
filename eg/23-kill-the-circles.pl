@@ -87,7 +87,6 @@ with qw(
 
 has detector => (is => 'ro', required => 1);
 has to       => (is => 'ro', required => 1);
-has radius   => (is => 'ro', default => 8);  # radius of blast for collision detection
 has color    => (is => 'rw', default  => 0xFFFFFFFF);
 
 sub start {
@@ -120,7 +119,7 @@ sub paint {
 
 package GameFrame::eg::CircleSpawner;
 use Moose;
-use List::Util qw(min);
+use List::Util qw(max);
 use GameFrame::Util::Vectors;
 
 with qw(
@@ -136,18 +135,25 @@ sub start {
 }
 
 around next_child_args => sub {
-    my ($orig, $self) = @_;
-    my $idx    = $self->next_child_idx;
-    my $speed  = min(200, 20 + $idx*3);
-    my $xy_vec = random_edge_vector V(640, 480);
-    my $dist   = abs($xy_vec - V(320, 200)) - 25; # 25 = player shield radius
+    my ($orig, $self)   = @_;
+    my $player          = V(320, 200);
+    my $player_radius   = 25;
+    my $idx             = $self->next_child_idx;
+    my $circle_radius   = max(16, 120 - $idx * 2);
+    my $duration        = max(0.7, 4 - $idx * 0.067);
+    my $from            = random_edge_vector(V(880,720)) - V(120,120);
+    my $from_to_player  = $from - $player;
+    my $dist            = abs($from_to_player) - $player_radius - $circle_radius;
+    my $circle_velocity = ($dist * $from_to_player) / (abs($from_to_player) * $duration);
+    my $to              = $from - $circle_velocity * $duration;;
     return {
         %{$self->$orig},
-        xy_vec         => $xy_vec,
+        xy_vec         => $from,
+        radius         => $circle_radius,
         animation_args => [
-            attribute => 'radius',
-            to        => $dist,
-            duration  => ($dist / $speed),
+            attribute => 'xy_vec',
+            to        => $to,
+            duration  => $duration,
         ],
     };
 };
@@ -160,10 +166,10 @@ use MooseX::Types::Moose qw(Int);
 use GameFrame::MooseX;
 use aliased 'GameFrame::Animation';
  
-has detector   => (is => 'ro', required => 1);
-has player     => (is => 'ro', required => 1, weak_ref => 1);
-has radius     => (is => 'rw', isa => Int, default  => 1);    # start small, then grow
-has color      => (is => 'rw', default  => 0xFFFFFFFF);
+has detector => (is => 'ro', required => 1);
+has player   => (is => 'ro', required => 1, weak_ref => 1);
+has radius   => (is => 'rw', isa => Int, default  => 1);
+has color    => (is => 'rw', default  => 0xFFFFFFFF);
 
 with qw(
     GameFrame::Role::Paintable
@@ -182,7 +188,7 @@ sub start {
 
     $self->start_animation_and_wait;
     return unless $self->is_alive; # if we are dead, then we did not get to player
-    $self->player->hit(10);        # if we are alive, hit player
+#   $self->player->hit(10);        # if we are alive, hit player
 
     $self->detector->circle_reached_goal($self);
 }
