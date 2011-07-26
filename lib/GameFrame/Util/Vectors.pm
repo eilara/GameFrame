@@ -6,7 +6,8 @@ use Math::Vector::Real;
 use Math::Trig;
 use base 'Exporter';
 
-our @EXPORT = qw(pi V VP angle_between random_edge_vector);
+our @EXPORT = qw(pi V VP angle_between random_edge_vector
+                 detect_dynamic_collision);
 
 # polar vector: angle and distance
 sub VP {
@@ -37,5 +38,16 @@ sub angle_between($$) {
     return atan2($dy, $dx);
 }
 
-1;
+my $Collision_Detection_Dispath = {
+    circle_to_circle => \&detect_dynamic_collision_circle_to_circle,
+};
 
+sub detect_dynamic_collision($%) {
+    my ($type, %args) = @_;
+    my $code = $Collision_Detection_Dispath->{type};
+    $code->(%args);
+}
+
+sub detect_dynamic_collision_circle_to_circle {
+    my ($c1, $c2) = @_;
+}

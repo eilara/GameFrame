@@ -64,9 +64,9 @@ sub on_mouse_button_up {
     my $to    = $self->xy_vec + VP($angle, 300); # missle range=300
 
     $self->create_next_child(
-        xy_vec => $from,
-        to     => $to,
-        angle  => $angle,
+        xy_vec     => $from,
+        to         => $to,
+        angle      => $angle,
     );
 }
 
@@ -87,6 +87,7 @@ with qw(
 
 has detector => (is => 'ro', required => 1);
 has to       => (is => 'ro', required => 1);
+has radius   => (is => 'ro', default => 8);  # radius of blast for collision detection
 has color    => (is => 'rw', default  => 0xFFFFFFFF);
 
 sub start {
@@ -139,11 +140,10 @@ around next_child_args => sub {
     my $idx    = $self->next_child_idx;
     my $speed  = min(200, 20 + $idx*3);
     my $xy_vec = random_edge_vector V(640, 480);
-    my $dist   = abs($xy_vec - V(320, 200)) - 25;
+    my $dist   = abs($xy_vec - V(320, 200)) - 25; # 25 = player shield radius
     return {
         %{$self->$orig},
         xy_vec         => $xy_vec,
-        speed          => $speed,
         animation_args => [
             attribute => 'radius',
             to        => $dist,
@@ -159,12 +159,11 @@ use Moose;
 use MooseX::Types::Moose qw(Int);
 use GameFrame::MooseX;
 use aliased 'GameFrame::Animation';
-
-has detector => (is => 'ro', required => 1);
-has player   => (is => 'ro', required => 1, weak_ref => 1);
-has speed    => (is => 'ro', required => 1);                # for benefit of detector
-has radius   => (is => 'rw', isa => Int, default  => 1);    # start small, then grow
-has color    => (is => 'rw', default  => 0xFFFFFFFF);
+ 
+has detector   => (is => 'ro', required => 1);
+has player     => (is => 'ro', required => 1, weak_ref => 1);
+has radius     => (is => 'rw', isa => Int, default  => 1);    # start small, then grow
+has color      => (is => 'rw', default  => 0xFFFFFFFF);
 
 with qw(
     GameFrame::Role::Paintable
@@ -239,71 +238,8 @@ sub add_collision {
 # TODO - missile on circle center
 sub compute_time_to_impact {
     my ($missile, $circle) = @_;
-
-    my $MISSILE_RADIUS = 8;
-
-    # if and when does line between m_xy_1,m_xy_2 moving at m_v ...
-    my $m_xy_1 = $missile->xy_vec;
-    my $m_xy_2 = $missile->to;
-    my $m_s    = $missile->speed;
-
-    # ...intersect circle with center c_xy and radius growing at c_v, currently at c_r
-    my $c_xy   = $circle->xy_vec;
-    my $c_v    = $circle->speed;
-    my $c_r    = $circle->radius;
-
-    my $m_to_c = $m_xy_1 - $c_xy;             # current diff vec to circle center
-    my $m_dir  = $m_xy_2 - $m_xy_1;           # missile dir vector
-    my $m_v    = $m_s * $m_dir / abs($m_dir); # missile velocity vector
-
-    # assume a collision in time $t
-    #
-    # missile will be at: 
-    #                            $m_at_t = $m_xy_1 + $m_v * $t
-    # circle radius will be: 
-    #                          $c_r_at_t = $c_r + $c_v * $t
-    # and $t must satisfy:
-    #                          $c_r_at_t = |$m_at_t - $c_xy|
-    # solving for $t:
-    #                                     $c_r_at_t**2 = abs2($m_xy_1 + $m_v * $t - $c_xy)
-    #                            ($c_r + $c_v * $t)**2 = abs2($m_to_c + $m_v * $t)
-    # $c_r**2 + 2 * $c_v * $t * $c_r + $c_v**2 * $t**2 = ($m_to_c_x + $m_v_x * $t)**2 + ...
-    #                                                  = $t**2 * abs2($m_v) + 
-    #                                                    $t    * 2 * ($m_v_x * $m_to_c_x + $m_v_y * $m_to_c_y) + 
-    #                                                          abs2($m_to_c)
-    #                                                0 = $t**2 * (abs2($m_v) - $c_v**2) + 
-    #                                                    $t    * 2 * ($m_v_x * $m_to_c_x + $m_v_y * $m_to_c_y - $c_v * $c_r) + 
-    #                                                          abs2($m_to_c) - $c_r**2
-    #                                                0 = $t**2 * $A + $t * $B + $C
-
-    my $A = abs2($m_v) - $c_v**2;
-    my $B = 2 * ($m_v->[0] * $m_to_c->[0] + $m_v->[1] * $m_to_c->[1] - $c_v * $c_r);
-    my $C = abs2($m_to_c) - $c_r**2;
-
-    # collide now if missile is less than radius away from circle now
-    return 0 if $C <= $MISSILE_RADIUS;
-
-    my (@t) = solve_quadratic($A, $B, $C);
-
-    return undef unless scalar @t; # no solutions
 }
-
-sub solve_quadratic {
-    my ($A, $B, $C) = @_;
-    my $B24AC = $B**2 - 4 * $A * $C;
-
-    if ($A < 0.001) {
-        my $t = -1 * $B / $C;
-        return $t;
-    }
-    return undef if $B24AC < 0; # will never meet
-
-    my $SQ = sqrt $B24AC;
-    my $t1 = (-1*$B + $SQ) / (2 * $A);
-    my $t2 = (-1*$B - $SQ) / (2 * $A);
-
-}
-
+ 
 # ------------------------------------------------------------------------------
 
 package main;
