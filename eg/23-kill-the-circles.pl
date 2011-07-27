@@ -12,6 +12,9 @@ use Moose;
 use GameFrame::Util::Vectors;
 
 has last_hit_time => (is => 'rw', default => -1);
+has radius        => (is => 'ro', default => 25);
+has velocity      => (is => 'ro', default => sub { V(0, 0) }); # player velocity
+                                                               # for collision detection
 
 with map { "GameFrame::Role::$_" } qw(
     SDLEventHandler
@@ -42,7 +45,7 @@ sub paint {
    return unless $self->is_alive;
    my $is_hit = (time - $self->last_hit_time) < 0.1;
    my $color  = $is_hit? 0xFF0000FF: 0x0000FFFF;
-   $self->draw_circle($self->xy, 25, $color, 1);
+   $self->draw_circle($self->xy, $self->radius, $color, 1);
 }
 
 # when mouse moves we set our angle
@@ -60,7 +63,7 @@ sub on_mouse_button_up {
     return if $self->child_count >= 4;
 
     my $angle = $self->angle;
-    my $from  = $self->xy_vec + VP($angle, 25);
+    my $from  = $self->xy_vec + VP($angle, $radius);
     my $to    = $self->xy_vec + VP($angle, 300); # missle range=300
 
     $self->create_next_child(
@@ -134,7 +137,8 @@ sub start {
     $self->spawn(duration => 30, waves => 60);
 }
 
-around next_child_args => sub {
+# animate the child up to the edge of the player shield
+around next_child_args  => sub {
     my ($orig, $self)   = @_;
     my $player          = V(320, 200);
     my $player_radius   = 25;
@@ -142,14 +146,14 @@ around next_child_args => sub {
     my $circle_radius   = max(16, 120 - $idx * 2);
     my $duration        = max(0.7, 4 - $idx * 0.067);
     my $from            = random_edge_vector(V(880,720)) - V(120,120);
-    my $from_to_player  = $from - $player;
-    my $dist            = abs($from_to_player) - $player_radius - $circle_radius;
-    my $circle_velocity = ($dist * $from_to_player) / (abs($from_to_player) * $duration);
-    my $to              = $from - $circle_velocity * $duration;;
+    my $to              = $player + normalize_vector($from - $player) *
+                          ($player_radius + $circle_radius);
+    my $circle_velocity = ($to - $from) / $duration;
     return {
         %{$self->$orig},
         xy_vec         => $from,
         radius         => $circle_radius,
+        velocity       => $circle_velocity,
         animation_args => [
             attribute => 'xy_vec',
             to        => $to,
@@ -168,7 +172,8 @@ use aliased 'GameFrame::Animation';
  
 has detector => (is => 'ro', required => 1);
 has player   => (is => 'ro', required => 1, weak_ref => 1);
-has radius   => (is => 'rw', isa => Int, default  => 1);
+has radius   => (is => 'rw', isa => Int, required => 1);
+has velocity => (is => 'rw', required => 1);
 has color    => (is => 'rw', default  => 0xFFFFFFFF);
 
 with qw(

@@ -7,7 +7,7 @@ use Math::Trig;
 use base 'Exporter';
 
 our @EXPORT = qw(pi V VP angle_between random_edge_vector
-                 detect_dynamic_collision);
+                 detect_dynamic_collision normalize_vector);
 
 # polar vector: angle and distance
 sub VP {
@@ -36,6 +36,11 @@ sub angle_between($$) {
     # $v2 is too close to $v1 to compute angle
     return undef if abs($dx) < 0.5 and abs($dy) < 0.5;
     return atan2($dy, $dx);
+}
+
+sub normalize_vector($) {
+    my ($v) = @_;
+    return $v / abs($v);
 }
 
 my $Collision_Detection_Dispath = {
