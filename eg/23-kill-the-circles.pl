@@ -63,7 +63,7 @@ sub on_mouse_button_up {
     return if $self->child_count >= 4;
 
     my $angle = $self->angle;
-    my $from  = $self->xy_vec + VP($angle, $radius);
+    my $from  = $self->xy_vec + VP($angle, $self->radius);
     my $to    = $self->xy_vec + VP($angle, 300); # missle range=300
 
     $self->create_next_child(
@@ -185,7 +185,7 @@ with qw(
 
 compose_from Animation,
     inject => sub { (target => shift) },
-    has    => {handles => [qw(start_animation_and_wait stop_animation)]};
+    has    => {handles => [qw(start_animation_and_wait stop_animation duration)]};
 
 sub start {
     my $self = shift;
@@ -213,6 +213,7 @@ sub paint {
 
 package GameFrame::eg::CircleMissileCollisionDetector;
 use Moose;
+use GameFrame::Util::Vectors;
 use Set::Object::Weak qw(weak_set);
 
 has [qw(circles missiles)] => (is => 'ro', default => sub { weak_set });
@@ -220,11 +221,12 @@ has [qw(circles missiles)] => (is => 'ro', default => sub { weak_set });
 sub circle_spawned {
     my ($self, $circle) = @_;
 #    foreach my $missile ($self->missiles->members) {
-#        my $time_to_impact = compute_time_to_impact($missile, $circle);
+#        my $time_to_impact = detect_dynamic_collision
+#            (circle_to_circle => $missile, $circle, $circle->duration);
 #        next unless defined $time_to_impact;
 #        $self->add_collision($missile, $circle, $time_to_impact);
 #    }
-    $self->circles->insert($circle);
+#    $self->circles->insert($circle);
 }
 
 sub circle_reached_goal {
@@ -243,13 +245,10 @@ sub missile_lost {
 }
 
 sub add_collision {
-    my $self = shift;
+    my ($self, $missile, $circle, $time) = @_;
+    print "$missile, $circle, $time\n";
 }
 
-# TODO - missile on circle center
-sub compute_time_to_impact {
-    my ($missile, $circle) = @_;
-}
  
 # ------------------------------------------------------------------------------
 
@@ -274,7 +273,7 @@ my $player = GameFrame::eg::CircleKiller->new(
     speed             => 100, # speed when dropping to death
     child_args        => {
         child_class => 'GameFrame::eg::CircleKillMissile',
-        speed       => 200,
+        speed       => 300,
         start_hp    => 1,
         detector    => $detector,
     },

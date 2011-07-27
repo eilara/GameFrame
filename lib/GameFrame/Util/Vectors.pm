@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Math::Vector::Real;
 use Math::Trig;
+use Collision::2D ':all';
 use base 'Exporter';
 
 our @EXPORT = qw(pi V VP angle_between random_edge_vector
@@ -48,11 +49,21 @@ my $Collision_Detection_Dispath = {
 };
 
 sub detect_dynamic_collision($%) {
-    my ($type, %args) = @_;
-    my $code = $Collision_Detection_Dispath->{type};
-    $code->(%args);
+    my ($type, @args) = @_;
+    my $code = $Collision_Detection_Dispath->{$type};
+    $code->(@args);
 }
 
 sub detect_dynamic_collision_circle_to_circle {
-    my ($c1, $c2) = @_;
+    my ($c1, $c2, $interval) = @_;
+    ($c1, $c2) = map { prepare_circle($_) } $c1, $c2;
+    my $collision = dynamic_collision($c1, $c2, interval => $interval);
+    return $collision? $collision->time: undef;
+}
+
+sub prepare_circle {
+    my $c = shift;
+    my ($c_xy, $c_v) = ($c->xy_vec, $c->velocity);
+    return hash2circle ({x=>$c_xy->[0], y=>$c_xy->[1], xv=>$c_v->[0],
+                         yv=>$c_v->[1], radius => $c->radius});
 }
