@@ -62,14 +62,22 @@ sub on_mouse_button_up {
     # cant fire more than 4 missiles at once
     return if $self->child_count >= 4;
 
-    my $angle = $self->angle;
-    my $from  = $self->xy_vec + VP($angle, $self->radius);
-    my $to    = $self->xy_vec + VP($angle, 300); # missle range=300
+    my $speed    = 300;
+    my $dist     = 300; # missile range
+    my $angle    = $self->angle;
+    my $from     = $self->xy_vec + VP($angle, $self->radius);
+    my $to       = $self->xy_vec + VP($angle, $dist); # missle range=300
+    my $to_from  = $to - $from;
+    my $velocity = normalize_vector($to_from) * $speed;
+    my $duration = $dist / $speed;
 
     $self->create_next_child(
-        xy_vec     => $from,
-        to         => $to,
-        angle      => $angle,
+        xy_vec   => $from,
+        to       => $to,
+        angle    => $angle,
+        speed    => $speed,
+        velocity => $velocity,
+        duration => $duration,
     );
 }
 
@@ -91,6 +99,9 @@ with qw(
 has detector => (is => 'ro', required => 1);
 has to       => (is => 'ro', required => 1);
 has color    => (is => 'rw', default  => 0xFFFFFFFF);
+has radius   => (is => 'ro', default  => 8);
+has velocity => (is => 'ro', required => 1); # for benefit of detector
+has duration => (is => 'ro', required => 1); # for benefit of detector
 
 sub start {
     my $self = shift;
@@ -114,7 +125,7 @@ sub paint {
     my $self = shift;
     $self->draw_polygon_polar(
        $self->color,
-       [pi*0, 8], [pi*3/4, 5], [pi*5/4, 5],
+       [pi*0, $self->radius], [pi*3/4, 5], [pi*5/4, 5],
    );
 }
 
@@ -213,20 +224,22 @@ sub paint {
 
 package GameFrame::eg::CircleMissileCollisionDetector;
 use Moose;
-use GameFrame::Util::Vectors;
+use List::Util qw(min);
 use Set::Object::Weak qw(weak_set);
+use GameFrame::Util::Vectors;
 
 has [qw(circles missiles)] => (is => 'ro', default => sub { weak_set });
 
 sub circle_spawned {
     my ($self, $circle) = @_;
 #    foreach my $missile ($self->missiles->members) {
-#        my $time_to_impact = detect_dynamic_collision
-#            (circle_to_circle => $missile, $circle, $circle->duration);
+#        my $time_to_impact = detect_dynamic_collision(circle_to_circle =>
+#            $missile, $circle, min($circle->duration, $missile->duration));
+##   print "$missile, $circle, $time_to_impact\n";
 #        next unless defined $time_to_impact;
 #        $self->add_collision($missile, $circle, $time_to_impact);
 #    }
-#    $self->circles->insert($circle);
+    $self->circles->insert($circle);
 }
 
 sub circle_reached_goal {
@@ -236,6 +249,12 @@ sub circle_reached_goal {
 
 sub missile_fired {
     my ($self, $missile) = @_;
+    foreach my $circle ($self->circles->members) {
+        my $time_to_impact = detect_dynamic_collision(circle_to_circle =>
+            $missile, $circle, min($circle->duration, $missile->duration));
+        next unless defined $time_to_impact;
+        $self->add_collision($missile, $circle, $time_to_impact);
+    }
     $self->missiles->insert($missile);
 }
 
@@ -246,7 +265,7 @@ sub missile_lost {
 
 sub add_collision {
     my ($self, $missile, $circle, $time) = @_;
-    print "$missile, $circle, $time\n";
+   print "$missile, $circle, $time\n";
 }
 
  
@@ -273,7 +292,6 @@ my $player = GameFrame::eg::CircleKiller->new(
     speed             => 100, # speed when dropping to death
     child_args        => {
         child_class => 'GameFrame::eg::CircleKillMissile',
-        speed       => 300,
         start_hp    => 1,
         detector    => $detector,
     },

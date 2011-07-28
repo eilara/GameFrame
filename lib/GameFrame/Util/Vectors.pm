@@ -64,6 +64,7 @@ sub detect_dynamic_collision_circle_to_circle {
 sub prepare_circle {
     my $c = shift;
     my ($c_xy, $c_v) = ($c->xy_vec, $c->velocity);
-    return hash2circle ({x=>$c_xy->[0], y=>$c_xy->[1], xv=>$c_v->[0],
-                         yv=>$c_v->[1], radius => $c->radius});
+    my $h = {x=>$c_xy->[0], y=>$c_xy->[1], xv=>$c_v->[0],
+            yv=>$c_v->[1], radius => $c->radius};
+    return hash2circle($h);
 }
