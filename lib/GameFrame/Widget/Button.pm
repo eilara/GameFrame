@@ -32,7 +32,7 @@ sub disable     { shift->is_enabled(0) }
 
 sub is_enabled_trigger {
     my $self = shift;
-    $self->sequence_animation($self->is_enabled? 'default': 'disabled');
+    $self->sequence($self->is_enabled? 'default': 'disabled');
 }
 
 sub on_mouse_button_down { shift->press }

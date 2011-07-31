@@ -12,8 +12,6 @@ use aliased 'GameFrame::Widget::Image';
 
 has separator_image => (is => 'ro', isa => Str, required => 1);
 
-with 'GameFrame::Role::Rectangle';
-
 # need to add DefByName so that we can wrap around prepare_child_defs
 # BEFORE we consume the Box role, which also wraps this method
 # and we want our wrapping to happen 1st

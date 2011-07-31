@@ -22,7 +22,7 @@ has counter => (
     is      => 'ro',
     isa     => 'Num',
     default => 1,
-    handles => [qw(inc dec)],
+    handles => {inc => 'inc',dec => 'dec'}, # ???
     trigger => sub { $_[0]->counter_change( $_[0]->counter ) },
 );
 
@@ -33,8 +33,8 @@ with 'MooseX::Role::Listenable' => {event => 'counter_change'};
 sub quit { exit }
 
 sub paint {
-    my ($self, $surface) = @_;
-    $surface->draw_gfx_text([300, 150], 0xFFFFFFFF, $self->counter);
+    my $self = shift;
+    $self->draw_gfx_text([300, 150], 0xFFFFFFFF, $self->counter);
 }
 
 # ------------------------------------------------------------------------------
@@ -79,7 +79,7 @@ my $button = sub {
         size        => [45, 44],
         layer       => 'foreground',
         bg_image    => 'button_background',
-        icon        => $name,
+        image       => $name,
         target      => $controller,
         command     => $command,
     });
@@ -96,7 +96,7 @@ my $panel = sub {
 
 my $window = Window->new(
     orientation => 'vertical',
-    size        => [640, 480],
+    rect        => [0, 0, 640, 480],
     child_defs  => [
 
         top_panel => {

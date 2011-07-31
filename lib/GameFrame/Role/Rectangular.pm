@@ -32,7 +32,9 @@ around BUILDARGS => sub {
         $args{size} = [$w, $h];
     }
 
-    $args{_size} = delete $args{size};
+    if (my $size = delete $args{size}) {
+        $args{_size} = $size;
+    }
 
     if (my $centered = delete $args{centered}) {
         $args{is_centered} = $centered;
