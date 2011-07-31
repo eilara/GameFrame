@@ -26,8 +26,8 @@ with 'GameFrame::Role::Paintable';
 sub quit { exit }
 
 sub paint {
-    my ($self, $surface) = @_;
-    $surface->draw_gfx_text([300, 150], 0xFFFFFFFF, $self->counter);
+    my $self = shift;
+    $self->draw_gfx_text([300, 150], 0xFFFFFFFF, $self->counter);
 }
 
 # ------------------------------------------------------------------------------
@@ -37,6 +37,7 @@ use strict;
 use warnings;
 use FindBin qw($Bin);
 use aliased 'GameFrame::App';
+use aliased 'GameFrame::ImageFile';
 use aliased 'GameFrame::Window';
 use aliased 'GameFrame::Widget::Panel';
 use aliased 'GameFrame::Widget::Image';
@@ -68,7 +69,7 @@ my $button = sub {
         size        => [45, 44],
         layer       => 'foreground',
         bg_image    => 'button_background',
-        icon        => $name,
+        image       => $name,
         target      => $controller,
         command     => $command,
     });
@@ -76,7 +77,7 @@ my $button = sub {
 
 my $window = Window->new(
     orientation => 'vertical',
-    size        => [640, 480],
+    rect        => [0, 0, 640, 480],
     child_defs  => [
 
         top_panel => {
@@ -96,10 +97,12 @@ my $window = Window->new(
                 $button->(button_dec => sub { shift->dec }),
 
                 $sep->(),
+                # note we stretch the 1px toolbar panel
                 panel => {
                     child_class => Panel,
                     orientation => 'horizontal',
-                    bg_image    => 'toolbar_panel',
+                    bg_image    => ImageFile->new
+                        (file => 'toolbar_panel_1x48', stretch => 1),
                 },
 
                 $sep->(),

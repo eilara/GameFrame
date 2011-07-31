@@ -16,6 +16,7 @@ with qw(
     GameFrame::Role::Animated
 );
 
+# pick a random default sequence if none given
 sub _build__sequence { (keys %{ shift->sequences })[0] }
 
 around _build_sprite => sub {

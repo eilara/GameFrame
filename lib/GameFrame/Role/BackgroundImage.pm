@@ -15,12 +15,12 @@ with 'GameFrame::Role::Rectangular';
 compose_from 'GameFrame::Widget::Image',
     prefix => 'bg_sprite',
     inject => {
-        xy         => 'xy',
-        image_size => 'size',
-        image      => 'bg_image',
-        layer      => 'bg_image_layer',
+        rect  => 'rect',
+        image => 'bg_image',
+        layer => 'bg_image_layer',
     };
-
+ 
+# TODO should set on trigger of xy
 sub bg_x { shift->bg_sprite->x(@_) }
 sub bg_y { shift->bg_sprite->y(@_) }
 

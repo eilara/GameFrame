@@ -21,14 +21,8 @@ with qw(
 # inject image file name, sizes and default sequence for button
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
-    $args{image} = {
-        file      => (delete($args{icon}) || die 'no icon given'),
-        size      => [$args{w}, $args{h}],
-        sequences => { default => [[0,0]], disabled => [[1,0]]},
-    };
-    my $size = $args{size};
-    ($args{w}, $args{h}) = @$size if $size;
-    $args{image}->{size} ||= [$args{w}, $args{h}];
+    $args{sequences} = { default => [[0,0]], disabled => [[1,0]] };
+    $args{sequence} = 'default';
     return $class->$orig(%args);
 };
 

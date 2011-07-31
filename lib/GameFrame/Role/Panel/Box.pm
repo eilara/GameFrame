@@ -51,7 +51,7 @@ around prepare_child_defs => sub {
 
     # set sizes on flex children
     if (@flex_children) {
-        my $left_over      = $self->{$size} - $total_size;
+        my $left_over      = $self->$size - $total_size;
         my $flex_width     = int($left_over / scalar @flex_children);
         my $flex_width_mod = $left_over % scalar @flex_children;
         for my $child_def (@flex_children) {
@@ -65,7 +65,7 @@ around prepare_child_defs => sub {
         $child_def->{$place}  = $at;
         $at                  += $child_def->{$size};
     }
-
+    
     return @defs;
 };
 

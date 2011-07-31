@@ -6,8 +6,6 @@ package GameFrame::Widget::Panel;
 
 use Moose;
 
-with 'GameFrame::Role::Rectangle';
-
 with qw(
     GameFrame::Role::BackgroundImage
     GameFrame::Role::Event::BoxRouter
