@@ -6,8 +6,6 @@ package GameFrame::Window;
 
 use Moose;
 
-with 'GameFrame::Role::Rectangle';
-
 with qw(
     GameFrame::Role::SDLEventHandler
     GameFrame::Role::Event::BoxRouter

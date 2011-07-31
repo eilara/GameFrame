@@ -11,13 +11,12 @@ use lib "$Bin/../lib";
 
 package GameFrame::eg::EnterLeavePanel;
 use Moose;
+use GameFrame::Util::Vectors;
 
 # depth of panel in tree
 has level => (is => 'ro', required => 1);
 
 has last_event => (is => 'rw', default => 'no event');
-
-with 'GameFrame::Role::Rectangle';
 
 with qw(
     GameFrame::Role::Event::BoxRouter
@@ -28,12 +27,12 @@ after on_mouse_enter => sub { shift->last_event('enter') };
 after on_mouse_leave => sub { shift->last_event('leave') };
 
 sub paint {
-    my ($self, $surface) = @_;
+    my $self = shift;
     my $level = $self->level;
     my $indent = $level * 10;
     my $message = "panel level $level, last event: ". $self->last_event;
-    my $xy = $self->translate_point(xy => $indent, $indent);
-    $surface->draw_gfx_text($xy, 0xFFFFFFFF, $message);
+    my $xy = $self->xy_vec + V($indent, $indent);
+    $self->draw_gfx_text([@$xy], 0xFFFFFFFF, $message);
 }
 
 # ------------------------------------------------------------------------------
@@ -54,7 +53,7 @@ sub panel { {child_class => 'GameFrame::eg::EnterLeavePanel', @_} }
 
 my $window = Window->new(
     orientation => 'vertical',
-    size        => [640, 480],
+    rect        => [0, 0, 640, 480],
     child_defs  => [
         top_panel    => panel(h => 400, level => 1),
         bottom_panel => panel(h =>  80, level => 1, child_defs => [
