@@ -45,8 +45,10 @@ has animation_complete_signal => (
     },
 );
 
-after stop => sub {
-    my $self = shift;
+around stop => sub {
+    my ($orig, $self) = @_;
+    return unless $self->is_timer_active;
+    $self->$orig;
     $self->_animation_complete;
 };
 

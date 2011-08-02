@@ -132,6 +132,7 @@ sub _on_timer_tick {
                   $self->total_cycle_pause;
     $self->total_sleep_computed($elapsed);
 
+    # successful completion of the animation cycle
     if (my $ideal_cycle_duration = $self->is_cycle_complete($elapsed, $delta)) {
         $self->_stop($ideal_cycle_duration);
         $self->cycle_complete;

@@ -12,7 +12,8 @@ extends 'GameFrame::Animation::Base';
 
 # target must do compute_destination, xy_vec, and speed
 has target => (is => 'ro', required => 1, weak_ref => 1,
-               handles => [qw(compute_destination xy_vec speed)]);
+               handles => [qw(compute_destination xy_vec speed
+                              destination_reached)]);
 
 has [qw(next_xy last_dist)] => (is => 'rw');
 
@@ -34,6 +35,7 @@ sub timer_tick {
 sub cycle_complete {
     my $self = shift;
     $self->xy_vec($self->compute_destination);
+    $self->destination_reached;
 }
 
 sub check_move_limit {
@@ -44,6 +46,12 @@ sub check_move_limit {
     my $current = $self->xy_vec;
     my $dir_vec = $to - $current;
     my $dist    = abs($dir_vec);
+
+    if ($dist < 1) { # we have arrived
+        $self->next_xy($self->xy_vec);
+        return 1;
+    }
+
     my $ratio   = $speed * $delta / $dist;
     my $new     = $current + $dir_vec * $ratio;
 

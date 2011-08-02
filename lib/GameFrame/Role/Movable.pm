@@ -45,6 +45,9 @@ sub move_to {
 sub start_motion { shift->motion->start_animation }
 sub stop_motion  { shift->motion->stop_animation }
 
+# called when reached destination
+sub destination_reached {}
+
 sub set_to {
     my ($self, $to) = @_;
     # 'to' can be any code that returns Vector2D, array ref of dim 2,
