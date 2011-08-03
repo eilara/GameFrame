@@ -5,7 +5,7 @@ use lib "$Bin/../lib";
 # TODO NOT DONE YET
 #
 # demo of toggle buttons, also of using the wrong control scheme for a game ;)
-# be careful of the incoming lines- move left and right with the toggle buttons
+# be careful of the incoming circles- move left and right with the toggle buttons
 # untoggle to stop moving
 
 # ------------------------------------------------------------------------------
@@ -25,9 +25,15 @@ has last_hit_time => (is => 'rw', default => -1);
 
 with 'MooseX::Role::Listenable' => {event => 'dir_change'};
 
-with map { "GameFrame::Role::$_" } qw(
-    SDLEventHandler Figure Movable HealthBar Scoreable
-);
+with map { "GameFrame::Role::$_" }
+       qw( SDLEventHandler Figure Movable HealthBar Scoreable );
+
+sub pause { print "TODO\n" }
+
+sub quit { exit }
+
+# called on Movable when reached field edge
+after destination_reached => sub { shift->dir(0) };
 
 sub left {
    my ($self, $start_or_stop) = @_;
@@ -51,17 +57,9 @@ sub dir_trigger {
     $self->start_motion;
 }
 
-# called on Movable when reached field edge
-after destination_reached => sub { shift->dir(0) };
-
-sub quit { exit }
-
 sub on_hit { shift->last_hit_time(time) }
 
-sub on_death {
-    my $self = shift;
-    print "DEAD\n";
-}
+sub on_death { print "TODO\n" }
 
 sub paint {
     my $self = shift;
@@ -75,6 +73,74 @@ sub paint {
    my $is_hit = (time - $self->last_hit_time) < 0.1;
    my $color  = $is_hit? 0xFF0000FF: 0x0000FFFF;
    $self->draw_circle($self->xy, 25, $color, 1);
+}
+
+# ------------------------------------------------------------------------------
+
+package GameFrame::eg::ToggleButton::Spawner;
+use Moose;
+use List::Util qw(max min);
+
+with qw(
+    GameFrame::Role::Container::Simple
+    GameFrame::Role::Active
+    GameFrame::Role::Spawner
+);
+
+sub start {
+    my $self = shift;
+    $self->spawn(duration => 30, waves => 60);
+}
+
+around next_child_args => sub {
+    my ($orig, $self)  = @_;
+    my $idx            = $self->next_child_idx;
+    my $r              = min(80, 8 + 1.3 * $idx);
+    my $x              = (int rand (640 - 2 * $r)) + $r;
+    my $duration       = max(1, 4 - $idx * 0.047);
+    return {
+        %{$self->$orig},
+        xy             => [$x, -2 * $r],
+        radius         => $r,
+        animation_args => [
+            attribute  => 'xy_vec',
+            to         => [$x, 480 + 2 * $r],
+            duration   => $duration,
+            ease       => 'swing',
+        ],
+    };
+};
+
+# ------------------------------------------------------------------------------
+
+package GameFrame::eg::ToggleButton::EvilCircle;
+use Moose;
+use GameFrame::MooseX;
+use aliased 'GameFrame::Animation';
+
+has radius => (is => 'ro', required => 1);
+
+with qw(
+    GameFrame::Role::Paintable
+    GameFrame::Role::Positionable
+    GameFrame::Role::Active::Child
+);
+
+compose_from Animation,
+    inject => sub { (target => shift) },
+    has    => {handles => [qw(
+        start_animation_and_wait
+        stop_animation
+    )]};
+
+sub start {
+    my $self = shift;
+    $self->start_animation_and_wait;
+}
+
+sub paint {
+    my $self = shift;
+    $self->draw_circle($self->xy, $self->radius, 0xFFFFFFFF, 1);
 }
 
 # ------------------------------------------------------------------------------
@@ -110,13 +176,14 @@ my $app = App->new(
     bg_color  => 0x0,
     resources => "$Bin/resources/eg_toolbar",
 
-    layer_manager_args => [layers => ['foreground']],
+    layer_manager_args => [layers => [qw(enemy toolbar button player)]],
 );
 
 my $player = GameFrame::eg::ToggleButton::Player->new(
     xy         => [275, 405],
     health_bar => [-13,  18, 25, 2],
     speed      => 200,
+    layer      => 'player',
     angle      => pi*6/4,
     start_hp   => 50,
     radius     => 25, # shield radius
@@ -124,24 +191,35 @@ my $player = GameFrame::eg::ToggleButton::Player->new(
     right_edge => [640 - 25, 405],
 );
 
+my $spawner = GameFrame::eg::ToggleButton::Spawner->new(
+    child_args  => {
+        child_class => 'GameFrame::eg::ToggleButton::EvilCircle',
+        player      => $player,
+        layer       => 'enemy',
+    },
+);
+
 my $button = sub {
     my ($name, $is_toggle) = @_;
     return ("button_$name", {
-        child_class => ($is_toggle? Toggle: Button),
-        size        => [45, 44],
-        layer       => 'foreground',
-        bg_image    => 'button_background',
-        image       => "button_$name",
-        target      => $player,
-        command     => sub { $_[0]->$name($_[1]) },
+        child_class    => ($is_toggle? Toggle: Button),
+        layer          => 'button',
+        bg_image_layer => 'toolbar',
+        size           => [45, 44],
+        bg_image       => 'button_background',
+        image          => "button_$name",
+        target         => $player,
+        command        => sub { $_[0]->$name($_[1]) },
     });
 };
 
+# sub used to make toolbar background panels
 my $next_panel_i;
 my $panel = sub {
     return ('panel_'. ++$next_panel_i, {
-        child_class => Panel,
-        bg_image    => ImageFile->new
+        child_class    => Panel,
+        bg_image_layer => 'toolbar',
+        bg_image       => ImageFile->new
             (file => 'toolbar_panel_1x48', stretch => 1),
     });
 };
@@ -160,6 +238,7 @@ my $window = Window->new(
             child_class     => Toolbar,
             h               => 48,
             separator_image => 'separator',
+            layer           => 'toolbar',
             child_defs      => [
                 $panel->(),
                 $button->(left  => 1),
@@ -181,146 +260,3 @@ $player->add_dir_change_listener($controller);
 $app->run;
 
 __END__
-with qw(
-    GameFrame::Role::SDLEventHandler
-    GameFrame::Role::Figure
-    GameFrame::Role::HealthBar
-    GameFrame::Role::Scoreable
-    GameFrame::Role::Active
-);
-
-# ship faces up
-has '+angle' => (default => );
-
-with 'MooseX::Role::Listenable' => {event => 'velocity_change'};
-
-sub start {
-    my $self = shift;
-    my $shield = 25; # px shield size
-    # field rectangle defined so shield does not leave field
-    my $field  = [
-        $shield, 0,
-        $self->field_size->[0] - 2 * $shield, $self->field_size->[1],
-    ];
-
-    # given this next position, is it ok to move to it? when false, halt movement        
-    my $constraint_cb = sub { is_in_rect @{ pop() }, @$field };
-
-    my $signal = $self->wakeup_signal;
-
-    $self->move(
-        signal => $self->wakeup_signal,
-        limit  => $constraint_cb,
-        until  => sub { 1 },
-    );
-}
-
-my $Is_Currently_Paused = 0;
-my $Resume_Signal = Signal->new;
-# requires: xy, velocity, compute_new_pos, signal must be fired when
-# velocity changes, or until predicate changes, or limit changes
-# TODO
-#   - more general repeat-work-until
-sub move {
-    my ($self, %args) = @_;
-    my ($signal, $limit, $until) = @args{qw<signal limit until>};
-    my $min_sleep = 1/10;
-
-    while ($until->()) {
-
-        my $timer;
-        if ($self->velocity != V(0, 0)) {
-
-            my $sleep = max(1/abs($self->velocity), $min_sleep);
-
-            $timer = $self->build_timer(
-                sleep  => $sleep,
-                after  => $sleep,
-                signal => $signal,
-                limit  => $limit,
-            );
-
-        }
-
-        $signal->wait;
-        undef $timer;
-
-        if ($Is_Currently_Paused) {
-            print " + paused!\n";
-            $Resume_Signal->wait;
-            print " - resumed!\n";
-        }
-    }
-}
-
-sub build_timer {
-    my ($self, %args) = @_;
-    my ($after, $sleep, $signal, $limit) =
-        @args{qw<after sleep signal limit>};
-    my $last_tick = EV::now;
-
-    return EV::timer $after, $sleep, sub {
-
-        my $now     = EV::now;
-        my $elapsed = $now - $last_tick;
-        my $new_pos = $self->compute_new_pos($elapsed);
-        $last_tick  = $now;
-
-        if ($limit->($self, $new_pos)) {
-            $self->xy([@$new_pos]);
-        } else {
-            $signal->send;
-        }
-
-    };
-}
-
-sub pause { # $is_pause true for pause, false for resume
-    my ($self, $is_pause) = @_;
-    $Is_Currently_Paused = $is_pause || 0;
-    if ($Is_Currently_Paused) {
-        $self->wakeup_signal->send;
-    } else {
-        $Resume_Signal->broadcast;
-    }
-}
-
-sub compute_new_pos {
-    my ($self, $elapsed) = @_;
-    return V(@{ $self->xy }) + $elapsed * $self->velocity;
-}
-
-          trigger => sub { shift->velocity_trigger });
-# called from event handling coro
-sub velocity_trigger {
-    my $self = shift;
-    $self->velocity_change($self->velocity);
-    $self->wakeup_signal->send;
-}
-
-# toggle buttons send the toggle state as a param
-sub left  { $_[0]->velocity( V($_[1]? -1*$_[0]->speed: 0, 0) ) }
-sub right { $_[0]->velocity( V($_[1]?  1*$_[0]->speed: 0, 0) ) }
-
-sub quit { exit }
-
-sub on_hit { shift->last_hit_time(time) }
-
-sub on_death {
-    my $self = shift;
-    print "DEAD\n";
-}
-
-sub paint {
-    my $self = shift;
-    # spaceship
-    $self->draw_polygon_polar(
-       0xFFFFFFFF,
-       [pi*0, 20], [pi*3/4, 15], [pi*5/4, 15],
-   );
-   # paint shield, flash red if recently hit, don't if dead
-   return unless $self->is_alive;
-   my $is_hit = (time - $self->last_hit_time) < 0.1;
-   my $color  = $is_hit? 0xFF0000FF: 0x0000FFFF;
-   $self->draw_circle($self->xy, 25, $color, 1);
-}
