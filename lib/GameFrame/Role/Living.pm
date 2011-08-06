@@ -27,6 +27,11 @@ has hp => (
     default  => sub { shift->start_hp },
 );
 
+has last_hit_time => (
+    is      => 'rw',
+    default => -1,
+);
+
 has death_signal => (
     is      => 'ro',
     default => sub { Signal->new },
@@ -59,6 +64,7 @@ sub hit {
     my $hp = $self->hp - $damage;
     $hp = 0 if $hp < 0;
     $self->hp($hp);
+    $self->last_hit_time(time);
     $self->on_hit;
     $self->accept_death if $hp == 0;
 }
@@ -67,5 +73,11 @@ sub hp_ratio {
     my $self = shift;
     return $self->hp / $self->start_hp;
 }
- 
+
+sub has_been_recently_hit {
+    my ($self, $interval) = @_;
+    $interval ||= 0.1;
+    return ((time - $self->last_hit_time) < $interval);
+} 
+
 1;

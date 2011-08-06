@@ -11,8 +11,7 @@ package GameFrame::eg::CircleKiller;
 use Moose;
 use GameFrame::Util::Vectors;
 
-has last_hit_time => (is => 'rw', default => -1);
-has radius        => (is => 'ro', default => 25);
+has radius => (is => 'ro', default => 25);
 
 with map { "GameFrame::Role::$_" } qw(
     SDLEventHandler
@@ -41,17 +40,15 @@ sub paint {
    );
    # paint shield, flash red if recently hit, don't if dead
    return unless $self->is_alive;
-   my $is_hit = (time - $self->last_hit_time) < 0.1;
-   my $color  = $is_hit? 0xFF0000FF: 0x0000FFFF;
+
+   my $color  = $self->has_been_recently_hit(0.1)? 0xFF0000FF: 0x0000FFFF;
    $self->draw_circle($self->xy, $self->radius, $color, 1);
 }
 
 # when mouse moves we set our angle
 sub on_mouse_motion {
     my ($self, $x, $y) = @_;
-    my $angle = angle_between $self->xy_vec, V($x, $y);
-    return unless defined $angle; # cursor too close to center
-    $self->angle($angle);
+    $self->turn_towards(V($x, $y));
 }
 
 # fire!
@@ -73,8 +70,6 @@ sub on_mouse_button_up {
         speed    => $speed,
     );
 }
-
-sub on_hit { shift->last_hit_time(time) }
 
 # ------------------------------------------------------------------------------
 
@@ -210,10 +205,12 @@ sub start {
     )->start_animation_and_wait;
 }
 
+# collide with missile
 sub collide {
     my $self = shift;
     $self->accept_death;
     $self->stop_animation;
+    $self->player->add_to_score(1);
 }
 
 sub paint {
@@ -223,55 +220,11 @@ sub paint {
 
 # ------------------------------------------------------------------------------
 
-package GameFrame::eg::CircleMissileCollisionDetector;
-use Moose;
-use Coro::AnyEvent; # for sleep
-use aliased 'GameFrame::Animation';
-
-has [qw(spawner player)] => (is => 'ro', required => 1);
-
-with 'GameFrame::Role::Active';
-
-sub start {
-    my $self = shift;
-    while (1) {
-        Coro::AnyEvent::sleep 1/60;
-        my @collisions = $self->detect_collisions;
-        for my $collision (@collisions) {
-            my ($missile, $circle) = @$collision;
-            $_->collide for $missile, $circle;
-            $self->player->add_to_score(1);
-        }
-    }
-}
-
-sub detect_collisions {
-    my $self = shift;
-    my @collisions = map { $self->detect_collision($_) }
-                     map { my $missile = $_;
-                          map { [$missile, $_] }
-                          grep { $_->is_alive }
-                          $self->spawner->all_children;
-                     }
-                     grep { $_->is_alive }
-                     $self->player->all_children;
-    return @collisions;
-}
-
-sub detect_collision {
-    my ($self, $objects) = @_;
-    my ($missile, $circle) = @$objects;
-    my $dist = ($missile->xy_vec - $circle->xy_vec)->abs -
-               $missile->radius - $circle->radius;
-    return $dist <= 1? $objects: ();
-}
-
-# ------------------------------------------------------------------------------
-
 package main;
 use strict;
 use warnings;
 use aliased 'GameFrame::App';
+use aliased 'GameFrame::CollisionDetector';
 
 my $app = App->new(
     title    => 'Kill the Circles',
@@ -300,9 +253,9 @@ my $spawner = GameFrame::eg::CircleSpawner->new(
 );
 
 # detects collisions
-my $detector = GameFrame::eg::CircleMissileCollisionDetector->new(
-    player  => $player,
-    spawner => $spawner,
+my $detector = CollisionDetector->new(
+    container_1 => $player,
+    container_2 => $spawner,
 );
 
 $app->run;

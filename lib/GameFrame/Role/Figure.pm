@@ -13,6 +13,14 @@ with qw(
     GameFrame::Role::Positionable
 );
 
+# set angle towards $towards
+sub turn_towards {
+    my ($self, $towards) = @_; 
+    my $angle = angle_between $self->xy_vec, $towards;
+    return unless defined $angle; # cursor too close to center
+    $self->angle($angle);
+}
+
 sub draw_polygon_polar {
     my ($self, $color, @points) = @_;
     my $last_point = shift @points;

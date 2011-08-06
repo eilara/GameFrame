@@ -19,9 +19,9 @@ use Moose::Util::TypeConstraints;
 # -1 left, 0 no dir, 1 right
 has dir => (is => 'rw', default => 0, trigger => sub { shift->dir_trigger });
 
-has [qw(left_edge right_edge)] => (is => 'ro', required => 1);
+has radius => (is => 'ro', required => 1);
 
-has last_hit_time => (is => 'rw', default => -1);
+has [qw(left_edge right_edge)] => (is => 'ro', required => 1);
 
 with 'MooseX::Role::Listenable' => {event => 'dir_change'};
 
@@ -45,6 +45,7 @@ sub right {
    $self->dir($start_or_stop? 1: 0); 
 }
 
+# when dir changes, notify toggle buttons and update motion
 sub dir_trigger {
     my $self = shift;
     my $dir = $self->dir;
@@ -57,9 +58,13 @@ sub dir_trigger {
     $self->start_motion;
 }
 
-sub on_hit { shift->last_hit_time(time) }
+# collide with circle
+sub collide {
+    my $self = shift;
+    $self->hit(10);
+}
 
-sub on_death { print "TODO\n" }
+sub on_death { exit }
 
 sub paint {
     my $self = shift;
@@ -70,8 +75,7 @@ sub paint {
    );
    # paint shield, flash red if recently hit, don't if dead
    return unless $self->is_alive;
-   my $is_hit = (time - $self->last_hit_time) < 0.1;
-   my $color  = $is_hit? 0xFF0000FF: 0x0000FFFF;
+   my $color  = $self->has_been_recently_hit? 0xFF0000FF: 0x0000FFFF;
    $self->draw_circle($self->xy, 25, $color, 1);
 }
 
@@ -118,24 +122,41 @@ use Moose;
 use GameFrame::MooseX;
 use aliased 'GameFrame::Animation';
 
-has radius => (is => 'ro', required => 1);
+has radius => (is => 'rw', required => 1);
+has player => (is => 'ro', required => 1, weak_ref => 1);
 
 with qw(
     GameFrame::Role::Paintable
     GameFrame::Role::Positionable
+    GameFrame::Role::Living
     GameFrame::Role::Active::Child
 );
 
 compose_from Animation,
     inject => sub { (target => shift) },
-    has    => {handles => [qw(
-        start_animation_and_wait
-        stop_animation
-    )]};
+    has    => {handles => [qw(start_animation_and_wait stop_animation)]};
 
 sub start {
     my $self = shift;
     $self->start_animation_and_wait;
+    if ($self->is_alive) {
+        $self->accept_death;
+        $self->player->add_to_score(1);
+        return;
+    }
+    Animation->new(
+        target    => $self,
+        attribute => 'radius',
+        duration  => $self->radius / 100,
+        to        => 1,
+    )->start_animation_and_wait;
+}
+
+# collide with player
+sub collide {
+    my $self = shift;
+    $self->accept_death;
+    $self->stop_animation;
 }
 
 sub paint {
@@ -170,6 +191,7 @@ use aliased 'GameFrame::Widget::Panel';
 use aliased 'GameFrame::Widget::Button';
 use aliased 'GameFrame::Widget::Button::Toggle';
 use aliased 'GameFrame::Widget::Toolbar';
+use aliased 'GameFrame::CollisionDetector';
 
 my $app = App->new(
     title     => 'Toggle Button',
@@ -196,6 +218,7 @@ my $spawner = GameFrame::eg::ToggleButton::Spawner->new(
         child_class => 'GameFrame::eg::ToggleButton::EvilCircle',
         player      => $player,
         layer       => 'enemy',
+        start_hp    => 1,
     },
 );
 
@@ -256,6 +279,12 @@ my $window = Window->new(
 my $controller = GameFrame::eg::ToggleButton::Controller->new
     (toolbar => $window->child('toolbar'));
 $player->add_dir_change_listener($controller);    
+
+# detects collisions
+my $detector = CollisionDetector->new(
+    container_1 => $spawner,
+    child_2     => $player,
+);
 
 $app->run;
 
