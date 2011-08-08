@@ -16,7 +16,7 @@ use MooseX::Types::Moose qw(Bool Int Str ArrayRef);
 use SDL::Events;
 use SDL::Mouse;
 use SDLx::App;
-use aliased 'SDLx::Controller::Coro' => 'Controller';
+use aliased 'GameFrame::SDLx::Controller' => 'Controller';
 
 use GameFrame::MooseX;
 use GameFrame::Role::Paintable;
@@ -51,11 +51,11 @@ has hide_cursor => (is => 'ro', isa => Bool, required => 1, default => 0);
 
 compose_from 'SDLx::App',
     prefix => 'sdl',
-    has    => {handles => [qw(update stop)]},
+    has    => {handles => [qw(update)]},
     inject => [qw(w h title)];
 
 # the SDLx Coro controller we are wrapping
-compose_from Controller, prefix => 'controller';
+compose_from Controller;
 
 # our helper for managing layers, the layer manager
 compose_from LayerManager,
@@ -80,8 +80,8 @@ sub run {
     my $self = shift;
     my $sdl = $self->sdl; # must be created before controller add_event_handler
     my $c = $self->controller;
-    $c->add_show_handler(sub { $self->sdl_paint_handler });
-    $c->add_event_handler(sub { $self->sdl_event_handler(@_) });
+    $c->paint_cb(sub { $self->sdl_paint_handler });
+    $c->event_cb(sub { $self->sdl_event_handler(@_) });
     SDL::Mouse::show_cursor(SDL_DISABLE) if $self->hide_cursor;
     $c->run; # blocks
 }
@@ -98,10 +98,7 @@ sub sdl_paint_handler {
 
 sub sdl_event_handler {
     my ($self, $e) = @_;
-    if ($e->type == SDL_QUIT) {
-        $self->stop;
-        exit;
-    }
+    exit if $e->type == SDL_QUIT;
     $self->sdl_event($e);
 }
 

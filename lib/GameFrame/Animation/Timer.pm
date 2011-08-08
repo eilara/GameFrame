@@ -38,7 +38,7 @@ use aliased 'GameFrame::Animation::Clock';
 # * is_active while paused???
 # * elastic time
 
-my $MIN_SLEEP = 1 / 60;
+my $MIN_SLEEP = 1 / 50;
 
 has provider => (is => 'ro', required => 1, weak_ref => 1, handles => [qw(
     timer_tick
