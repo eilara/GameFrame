@@ -47,8 +47,6 @@ my $app = App->new(
     title     => 'Toolbar',
     bg_color  => 0x0,
     resources => "$Bin/resources/eg_toolbar",
-
-    layer_manager_args => [layers => ['foreground']],
 );
 
 my $controller = GameFrame::eg::Button::Controller->new;
@@ -67,7 +65,6 @@ my $button = sub {
     return ($name, {
         child_class => Button,
         size        => [45, 44],
-        layer       => 'foreground',
         bg_image    => 'button_background',
         image       => $name,
         target      => $controller,

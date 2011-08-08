@@ -32,11 +32,11 @@ sub Set_SDL_Main_Surface     { $SDL_Main_Surface     = shift }
 requires 'paint';
 
 has surface => (
-    is       => 'ro',
-    weak_ref => 1,
-    default  => sub { shift->_build_surface },
-    handles  => [qw(draw_gfx_text draw_circle draw_circle_filled
-                    draw_line draw_rect)],
+    is         => 'ro',
+    weak_ref   => 1,
+    lazy_build => 1,
+    handles    => [qw(draw_gfx_text draw_circle draw_circle_filled
+                      draw_line draw_rect)],
 );
 
 has layer => ( # layer name
@@ -51,19 +51,31 @@ has is_visible => (
     default  => 1,
 );
 
+# should we call paint on this paintable or will someone else do it
+has auto_paint => (
+    is       => 'ro',
+    isa      => Bool,
+    default  => 1,
+);
+
 sub show { shift->is_visible(1) }
 sub hide { shift->is_visible(0) }
 
-sub _build_surface {
-    my $self = shift;
-    $SDL_Paint_Observable->add_sdl_paint_listener($self);
-    return $SDL_Main_Surface;
-}
+sub _build_surface { $SDL_Main_Surface }
 
 sub sdl_paint {
     my $self = shift;
     return unless $self->is_visible;
     $self->paint;
 }
+
+# permonks stvn trick to get BUILD time action from roles
+sub BUILD {}
+before 'BUILD' => sub {
+    my $self = shift;
+    $SDL_Paint_Observable->add_sdl_paint_listener($self)
+        if $self->auto_paint;
+};
+
 
 1;

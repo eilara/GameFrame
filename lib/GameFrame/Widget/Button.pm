@@ -13,9 +13,9 @@ has target  => (is => 'ro', weak_ref => 1);
 has command => (is => 'ro', isa => CodeRef);
 
 with qw(
+    GameFrame::Role::BackgroundImage
     GameFrame::Role::AnimatedSprite
     GameFrame::Role::Event::Sink::Rectangular
-    GameFrame::Role::BackgroundImage
 );
 
 # inject image file name, sizes and default sequence for button

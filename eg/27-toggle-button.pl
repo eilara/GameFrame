@@ -161,7 +161,7 @@ sub collide {
 
 sub paint {
     my $self = shift;
-    $self->draw_circle($self->xy, $self->radius, 0xFFFFFFFF, 1);
+    $self->draw_circle_filled($self->xy, $self->radius, 0xFFFFFFFF, 1);
 }
 
 # ------------------------------------------------------------------------------
@@ -198,7 +198,7 @@ my $app = App->new(
     bg_color  => 0x0,
     resources => "$Bin/resources/eg_toolbar",
 
-    layer_manager_args => [layers => [qw(enemy toolbar button player)]],
+    layer_manager_args => [layers => [qw(enemy toolbar player)]],
 );
 
 my $player = GameFrame::eg::ToggleButton::Player->new(
@@ -226,8 +226,7 @@ my $button = sub {
     my ($name, $is_toggle) = @_;
     return ("button_$name", {
         child_class    => ($is_toggle? Toggle: Button),
-        layer          => 'button',
-        bg_image_layer => 'toolbar',
+        layer          => 'toolbar',
         size           => [45, 44],
         bg_image       => 'button_background',
         image          => "button_$name",
@@ -240,9 +239,9 @@ my $button = sub {
 my $next_panel_i;
 my $panel = sub {
     return ('panel_'. ++$next_panel_i, {
-        child_class    => Panel,
-        bg_image_layer => 'toolbar',
-        bg_image       => ImageFile->new
+        child_class => Panel,
+        layer       => 'toolbar',
+        bg_image    => ImageFile->new
             (file => 'toolbar_panel_1x48', stretch => 1),
     });
 };

@@ -19,7 +19,10 @@ has orientation => (
     default => 'horizontal',
 );
 
+# we are paintable so that consumers can attach bg image to paint
+# we dont paint anything ourselves
 with qw(
+    GameFrame::Role::Paintable
     GameFrame::Role::Rectangular
     GameFrame::Role::Container::DefByName
 );
@@ -95,6 +98,8 @@ sub _orientation_selectors {
 }
 
 sub is_horizontal { shift->orientation eq 'horizontal' }
+
+sub paint {}
 
 1;
 
