@@ -10,6 +10,9 @@ use Coro;
 use SDL::Event;
 use SDL::Events;
 
+# TODO frame paint should be lowest priority?
+#      coro signals for events instead of polling?
+
 has [qw(paint_cb event_cb)] => (is => 'rw');
 
 sub run {

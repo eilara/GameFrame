@@ -35,12 +35,12 @@ with qw(
 sub on_mouse_button_up {
     my $self = shift;
     push @{$self->children}, GameFrame::eg::GridStickySprite->new(
-        xy          => $self->xy,
-        size        => [22, 26],
-        image       => 'arrow',
-        layer       => 'middle',
-        is_centered => 1,
-        markers     => $self->markers,  
+        xy       => $self->xy,
+        size     => [22, 26],
+        image    => 'arrow',
+        layer    => 'middle',
+        centered => 1,
+        markers  => $self->markers,  
     );
 }
 
@@ -64,10 +64,11 @@ my $app = App->new(
 my $markers = Markers->new(size => $app->size, xy => [0, 0], spacing => 32);
 
 my $sprite = GameFrame::eg::GridMoveAroundSprite->new(
-    rect    => [100, 100, 22, 26],
-    image   => 'arrow',
-    layer   => 'top',
-    markers => $markers,
+    rect     => [100, 100, 22, 26],
+    image    => 'arrow',
+    layer    => 'top',
+    centered => 1,
+    markers  => $markers,
 );
 
 $app->run;

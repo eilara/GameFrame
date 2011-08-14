@@ -24,11 +24,12 @@ has radius => (is => 'ro', required => 1);
 has [qw(left_edge right_edge)] => (is => 'ro', required => 1);
 
 with 'MooseX::Role::Listenable' => {event => 'dir_change'};
+with 'MooseX::Role::Listenable' => {event => 'pause_request'};
 
 with map { "GameFrame::Role::$_" }
        qw( SDLEventHandler Figure Movable HealthBar Scoreable );
 
-sub pause { print "TODO\n" }
+sub pause { shift->pause_request(pop) }
 
 sub quit { exit }
 
@@ -177,6 +178,10 @@ sub dir_change {
     $self->child('button_left' )->toggle_off if ($dir == 0 or $dir ==  1);
 }
 
+sub pause_request {
+    my ($self, $is_pause) = @_;
+}
+
 # ------------------------------------------------------------------------------
 
 package main;
@@ -214,7 +219,7 @@ my $player = GameFrame::eg::ToggleButton::Player->new(
 );
 
 my $spawner = GameFrame::eg::ToggleButton::Spawner->new(
-    child_args  => {
+    child_args => {
         child_class => 'GameFrame::eg::ToggleButton::EvilCircle',
         player      => $player,
         layer       => 'enemy',
@@ -278,6 +283,7 @@ my $window = Window->new(
 my $controller = GameFrame::eg::ToggleButton::Controller->new
     (toolbar => $window->child('toolbar'));
 $player->add_dir_change_listener($controller);    
+$player->add_pause_request_listener($controller);    
 
 # detects collisions
 my $detector = CollisionDetector->new(

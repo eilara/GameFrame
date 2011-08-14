@@ -1,8 +1,7 @@
 package GameFrame::Role::FollowsWaypoints;
 
 use Moose::Role;
-use Coro;
-use Math::Vector::Real;
+use GameFrame::Util::Vectors;
 use aliased 'GameFrame::Grid::Waypoints';
 
 # waypoint followers move along waypoints
@@ -14,6 +13,12 @@ has waypoints => (
 );
 
 with 'GameFrame::Role::Movable';
+
+around BUILDARGS => sub {
+    my ($orig, $class, %args) = @_;
+    $args{xy_vec} = V(@{ $args{waypoints}->points_px->[0] });
+    return $class->$orig(%args);
+};
 
 sub follow_waypoints {
     my $self = shift;

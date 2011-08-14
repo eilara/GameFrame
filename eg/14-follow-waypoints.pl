@@ -56,11 +56,12 @@ my $waypoints = Waypoints->new(
 );
 
 GameFrame::eg::WaypointCrawler->new(
-    rect       => [0, 0, 22, 26],
-    image      => 'arrow',
-    layer      => 'top',
-    waypoints  => $waypoints,
-    speed      => 200,
+    size      => [22, 26],
+    image     => 'arrow',
+    layer     => 'top',
+    waypoints => $waypoints,
+    speed     => 200,
+    centered  => 1,
 );
 
 $app->run;

@@ -1,7 +1,6 @@
 package GameFrame::Role::Spawner;
 
 use Moose::Role;
-use MooseX::Types::Moose qw(Int);
 use aliased 'GameFrame::Animation::Proxy::Int' => 'IntProxy';
 
 with qw(

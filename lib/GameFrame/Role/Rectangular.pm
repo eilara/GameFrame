@@ -67,7 +67,7 @@ sub h {
 
 sub _center_xy {
     my $self = shift;
-    return $self->xy_vec + $self->_size / 2;
+    return $self->xy_vec - $self->_size / 2;
 }
 
 sub center_xy {

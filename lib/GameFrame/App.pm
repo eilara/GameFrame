@@ -86,12 +86,24 @@ sub run {
     $c->run; # blocks
 }
 
-#use EV; my $t = EV::time;
+#        my @times = map { 0 } 1..100;
+#        use EV; my $t = EV::time;
 sub sdl_paint_handler {
-#print ((EV::time - $t)."\n"); $t=EV::time;
+#        my $new_t = EV::time;
+#        my $dt = $new_t - $t;
+#        $t = $new_t;
+#        shift @times;
+#        push @times, $dt;
+#        my $sum; $sum += $_ for @times;
+#        my $avg = $sum / 100;
+#        my $fps = 1 / $avg;
+
     my $self = shift;
     my $c = $self->bg_color;
     $self->sdl->draw_rect(undef, $c) if defined $c;
+
+#        $self->sdl->draw_gfx_text([10, 10], 0xFFFF00FF, sprintf("%.2f", $fps));
+
     $self->paint;
     $self->update;
 }
