@@ -135,7 +135,8 @@ with qw(
 
 compose_from Animation,
     inject => sub { (target => shift) },
-    has    => {handles => [qw(start_animation_and_wait stop_animation)]};
+    has    => {handles => [qw(start_animation_and_wait stop_animation
+                              pause_animation resume_animation)]};
 
 sub start {
     my $self = shift;
@@ -170,16 +171,24 @@ sub paint {
 package GameFrame::eg::ToggleButton::Controller;
 use Moose;
 
-has toolbar => (is => 'ro', required => 1, handles => ['child']);
+has [qw(toolbar spawner player)] => (is => 'ro', required => 1, weak_ref => 1);
 
 sub dir_change {
     my ($self, $dir) = @_;
-    $self->child('button_right')->toggle_off if ($dir == 0 or $dir == -1);
-    $self->child('button_left' )->toggle_off if ($dir == 0 or $dir ==  1);
+    $self->toolbar->child('button_right')->toggle_off if ($dir == 0 or $dir == -1);
+    $self->toolbar->child('button_left' )->toggle_off if ($dir == 0 or $dir ==  1);
 }
 
 sub pause_request {
     my ($self, $is_pause) = @_;
+
+    my $enable_disable = $is_pause? 'disable': 'enable';
+    $self->toolbar->child($_)->$enable_disable for qw(button_left button_right);
+
+    my $pause_resume = ($is_pause? 'pause': 'resume'). '_animation';
+    $self->player->motion->$pause_resume;
+    $_->$pause_resume for $self->spawner->all_children;
+    $self->spawner->$pause_resume;
 }
 
 # ------------------------------------------------------------------------------
@@ -280,8 +289,11 @@ my $window = Window->new(
 
 # keep the buttons in sync- when one is hit the other should be untoggled
 # and both need to be untoggled when we reach the edge
-my $controller = GameFrame::eg::ToggleButton::Controller->new
-    (toolbar => $window->child('toolbar'));
+my $controller = GameFrame::eg::ToggleButton::Controller->new(
+    toolbar => $window->child('toolbar'),
+    spawner => $spawner,
+    player  => $player,
+);
 $player->add_dir_change_listener($controller);    
 $player->add_pause_request_listener($controller);    
 

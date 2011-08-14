@@ -206,17 +206,21 @@ sub pause {
 #    $self->sleep_after_resume($sleep_after_resume);
 
     $self->pause_start_time($now);
+
     $self->stop_timer;
 #    print "PAUSING now=$now actual_sleep=$actual_sleep cycle_start_time=$cycle_start_time total_cycle_pause=$total_cycle_pause sleep_after_resume=$sleep_after_resume total_sleep_computed=$total_sleep_computed\n";
 }
 
 sub resume {
     my ($self, $resume_time) = @_;
-    return if $self->is_timer_active;
+    return unless $self->pause_start_time; # we are not paused
+    return if     $self->is_timer_active;  # we are not active
+
     my $now = $resume_time || $self->now;
     my $pause_time = $now - $self->pause_start_time;
     $self->total_cycle_pause( $self->total_cycle_pause + $pause_time );
     $self->pause_start_time(undef); 
+    $self->last_tick_time($now - $self->cycle_sleep);
     $self->start_timer;
     $self->_on_timer_tick;
 }

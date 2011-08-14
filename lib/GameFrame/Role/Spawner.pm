@@ -2,6 +2,14 @@ package GameFrame::Role::Spawner;
 
 use Moose::Role;
 use aliased 'GameFrame::Animation::Proxy::Int' => 'IntProxy';
+use aliased 'GameFrame::Role::Animation';
+
+has animation => (
+    is       => 'rw',
+    does     => Animation,
+    weak_ref => 1,
+    handles  => Animation,
+);
 
 with qw(
     GameFrame::Role::Animated
@@ -11,13 +19,14 @@ with qw(
 sub spawn {
     my ($self, %args) = @_;
     my $waves = delete $args{waves} || "Can't spawn with no waves";
-    $self->animate({
-        target      => $self,
+    my $ani = $self->create_animation({
         attribute   => 'current_wave',
         proxy_class => IntProxy,
         from_to     => [1, $waves],
         %args,
     });
+    $self->animation($ani);
+    $ani->start_animation_and_wait;
 }
 
 sub current_wave {

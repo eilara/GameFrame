@@ -23,8 +23,7 @@ use aliased 'GameFrame::Animation::Composite';
 sub animate {
     my ($self, $spec) = @_;
     my $ani = $self->create_animation($spec);
-    $ani->start_animation;
-    $ani->wait_for_animation_complete;
+    $ani->start_animation_and_wait;
 }
 
 sub create_animation {
