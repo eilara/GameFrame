@@ -220,7 +220,7 @@ sub resume {
     my $pause_time = $now - $self->pause_start_time;
     $self->total_cycle_pause( $self->total_cycle_pause + $pause_time );
     $self->pause_start_time(undef); 
-    $self->last_tick_time($now - $self->cycle_sleep);
+    $self->last_tick_time($now);
     $self->start_timer;
     $self->_on_timer_tick;
 }

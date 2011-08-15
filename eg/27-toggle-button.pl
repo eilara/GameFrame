@@ -175,8 +175,8 @@ has [qw(toolbar spawner player)] => (is => 'ro', required => 1, weak_ref => 1);
 
 sub dir_change {
     my ($self, $dir) = @_;
-    $self->toolbar->child('button_right')->toggle_off if ($dir == 0 or $dir == -1);
-    $self->toolbar->child('button_left' )->toggle_off if ($dir == 0 or $dir ==  1);
+    $self->toolbar->child('button_right')->toggle_off if $dir == 0 or $dir == -1;
+    $self->toolbar->child('button_left' )->toggle_off if $dir == 0 or $dir ==  1;
 }
 
 sub pause_request {
