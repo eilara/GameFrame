@@ -6,6 +6,7 @@ package GameFrame::Animation::MoveTo;
 # TODO add accuracy
 
 use Moose;
+use GameFrame::Util::Vectors;
 use aliased 'GameFrame::Animation::CycleLimit';
 
 extends 'GameFrame::Animation::Base';
@@ -44,19 +45,24 @@ sub check_move_limit {
     my $speed   = $self->speed;
     my $to      = $self->compute_destination;
     my $current = $self->xy_vec;
-    my $dir_vec = $to - $current;
-    my $dist    = abs($dir_vec);
+    my $dir_vec = [$to->[0] - $current->[0], $to->[1] - $current->[1]];
+    my $dist    = ($dir_vec->[0]**2 + $dir_vec->[1]**2) ** 0.5;
 
     if ($dist < 1) { # we have arrived
-        $self->next_xy($self->xy_vec);
+        $self->next_xy($current);
         return 1;
     }
 
     my $ratio   = $speed * $delta / $dist;
-    my $new     = $current + $dir_vec * $ratio;
+    my $new     = V($current->[0] + $dir_vec->[0]*$ratio, $current->[1] + $dir_vec->[1]*$ratio);
 
+#    my $dir_vec = $to - $current;
+#    my $dist    = abs($dir_vec);
+#    my $ratio   = $speed * $delta / $dist;
+#    my $new     = $current + $dir_vec * $ratio;
 #    my $x=$dir_vec*$ratio;
-#    print("delta=${\( sprintf('%.3f',$delta))} vec=${\( sprintf('%.3f',$x->[0]))},${\( sprintf('%.3f',$x->[1]))}\n");
+
+#my $x=$new;print("delta=${\( sprintf('%.3f',$delta))} vec=${\( sprintf('%.3f',$x->[0]))},${\( sprintf('%.3f',$x->[1]))}\n");
 
     $self->next_xy($new);
 
@@ -64,12 +70,15 @@ sub check_move_limit {
     return 1 if $reached;
 
     my $last_dist = $self->last_dist;
-# TODO problematic when subject is moving wildly
+# TODO problematic when subject is moving wildly and overshoot
     return 1 if $last_dist && ($dist >= $last_dist);
     $self->last_dist($dist);
     return 0;
 }
 
 1;
+
+__END__
+
 
 

@@ -8,7 +8,7 @@ package GameFrame::Animation::Timeline;
 #
 
 use Moose;
-use MooseX::Types::Moose qw(Bool Num Int Str);
+use MooseX::Types::Moose qw(Bool Int);
 use aliased 'Coro::Signal';
 
 extends 'GameFrame::Animation::Timer';

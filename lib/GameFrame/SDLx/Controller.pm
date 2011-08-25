@@ -18,11 +18,12 @@ has [qw(paint_cb event_cb)] => (is => 'rw');
 sub run {
     my $self = shift;
 
-    async {
+    my $paint_coro = async {
         my $paint_cb = $self->paint_cb;
         while (1) {
-            $paint_cb->();
-            Coro::AnyEvent::sleep 1/50;
+           $paint_cb->();
+# lower if under load
+           Coro::AnyEvent::sleep 1/50;
         }
     };
 
@@ -32,6 +33,7 @@ sub run {
         while (1) {
             SDL::Events::pump_events();
             $event_cb->($event) while SDL::Events::poll_event($event);
+# TODO fix
             Coro::AnyEvent::sleep 1/50;
         }
     };

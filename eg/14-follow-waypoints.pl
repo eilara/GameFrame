@@ -60,7 +60,7 @@ GameFrame::eg::WaypointCrawler->new(
     image     => 'arrow',
     layer     => 'top',
     waypoints => $waypoints,
-    speed     => 200,
+    speed     => 100,
     centered  => 1,
 );
 

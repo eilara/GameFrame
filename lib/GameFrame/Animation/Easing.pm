@@ -3,10 +3,7 @@ package GameFrame::Animation::Easing;
 use Moose;
 use Math::Trig;
 
-sub linear {
-    my $t = shift;
-    return $t;
-}
+sub linear { shift }
 
 sub swing {
     my $t = shift;

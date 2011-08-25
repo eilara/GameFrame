@@ -4,21 +4,21 @@ package GameFrame::Role::Movable;
 # a MoveTo animation
 
 use Moose::Role;
-use MooseX::Types::Moose qw(Num);
+use MooseX::Types::Moose qw(CodeRef);
 use Scalar::Util qw(weaken);
-use Math::Vector::Real;
+use GameFrame::Util::Vectors;
 use GameFrame::MooseX;
 use aliased 'GameFrame::Animation::MoveTo';
 use aliased 'GameFrame::Role::Positionable';
 use aliased 'GameFrame::Role::Animation';
 
 # speed in pixels per second
-has speed => (is => 'rw', isa => Num, required => 1);
+has speed => (is => 'rw', required => 1); # isa => Num, 
 
 has destination_getter => (
     traits   => ['Code'],
     is       => 'rw',
-    isa      => 'CodeRef',
+    isa      => CodeRef,
     handles => {compute_destination => 'execute'},
 );
 

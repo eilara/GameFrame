@@ -11,7 +11,7 @@ use Moose::Role;
 use GameFrame::Types qw(Vector2D);
 
 has xy_vec => (is => 'rw', isa => Vector2D, required => 1, coerce => 1,
-               trigger => sub { shift->xy_trigger });
+               trigger => sub { shift->xy_trigger(@_) });
 
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
@@ -33,7 +33,7 @@ sub xy {
     return [@$xy] unless @_;
     $xy->[0] = $_[0]->[0];
     $xy->[1] = $_[0]->[1];
-    $self->xy_trigger;
+    $self->xy_trigger($xy);
 }
  
 sub x {
@@ -41,7 +41,7 @@ sub x {
     my $xy = $self->xy_vec;
     return $xy->[0] unless @_;
     $xy->[0] = $_[0];
-    $self->xy_trigger;
+    $self->xy_trigger($xy);
 }
 
 sub y {
@@ -49,7 +49,7 @@ sub y {
     my $xy = $self->xy_vec;
     return $xy->[1] unless @_;
     $xy->[1] = $_[0];
-    $self->xy_trigger;
+    $self->xy_trigger($xy);
 }
 
 sub xy_trigger {}

@@ -14,7 +14,6 @@ use aliased 'GameFrame::CamelDefense::Wave';
 my $app = App->new(
     title       => 'Grid',
     bg_color    => 0x0,
-    hide_cursor => 1,
     resources   => "$Bin/resources",
 
     layer_manager_args => [layers => [qw(path creeps)]],
@@ -53,8 +52,8 @@ my $waypoints = Waypoints->new(
 );
 
 my $wave = Wave->new(
-    duration   => 10,
-    waves      => 20,
+    duration   => 5,
+    waves      => 50,
     child_args => {
         child_class => Creep,
         size        => [21, 21],

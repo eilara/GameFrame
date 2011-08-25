@@ -44,9 +44,9 @@ sub _build_sprite {
 around xy_trigger => sub {
     my ($orig, $self) = @_;
     my $xy = $self->_actual_xy;
-    $self->sprite_x($xy->[0]);
-    $self->sprite_y($xy->[1]);
-    return $self->$orig($xy);
+    my $sprite = $self->sprite;
+    $sprite->x($xy->[0]);
+    $sprite->y($xy->[1]);
 };
 
 sub paint {

@@ -25,7 +25,7 @@ sub follow_waypoints {
     my @wps = @{ $self->waypoints->points_px };
     $self->xy(shift @wps);
     for my $wp (@wps) {
-        $self->move_to($wp);
+      $self->move_to(V(@$wp));
     }
 }
 
