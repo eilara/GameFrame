@@ -127,9 +127,11 @@ sub BUILD {
     $self->total_cycle_pause   (\$total_cycle_pause);
     $self->cycle_start_time    (\$cycle_start_time);
 
-    weaken $self;
     my $clock    = $self->clock;
     my $provider = $self->provider;
+    my $limit    = $self->cycle_limit;
+    weaken $self;
+    weaken $provider;
     $self->timer_tick_cb(sub{
 
         my $now               = $clock->now;
@@ -139,7 +141,7 @@ sub BUILD {
         $total_sleep_computed = $elapsed;
 
         # successful completion of the animation cycle
-        if (my $ideal_cycle_duration = $self->is_cycle_complete($elapsed, $delta)) {
+        if (my $ideal_cycle_duration = $limit->($elapsed, $delta)) {
             $self->_stop($ideal_cycle_duration);
             $self->cycle_complete;
             $self->_on_final_timer_tick;
