@@ -81,7 +81,7 @@ compose_from Curve,
 sub _suggest_timer_sleep {
     my $self = shift;
     my $speed = $self->curve_length / $self->duration;
-    return $self->compute_timer_sleep($speed);
+    return $self->compute_timer_sleep($speed || 100); # if curve len=0, smallest sleep possible
 }
 
 sub _build_cycle_limit {

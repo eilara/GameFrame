@@ -42,6 +42,12 @@ sub move_to {
     $self->motion->start_animation_and_wait;
 }
 
+sub restart_move_to {
+    my ($self, $to) = @_;
+    $self->set_to($to);
+    $self->motion->restart_animation_and_wait;
+}
+
 sub start_motion { shift->motion->start_animation }
 sub stop_motion  { shift->motion->stop_animation }
 

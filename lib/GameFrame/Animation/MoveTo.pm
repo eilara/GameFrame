@@ -18,15 +18,11 @@ has target => (is => 'ro', required => 1, weak_ref => 1,
                handles => [qw(compute_destination xy_vec speed xy
                               destination_reached)]);
 
-has last_dist => (is => 'rw');
-
 sub _build_cycle_limit {
     my $self = shift;
     my $target = $self->target;
     weaken $self;
     weaken $target;
-    my $last_dist;
-    $self->last_dist(\$last_dist);
     return sub {
         my ($elapsed, $delta) = @_;
 
@@ -37,7 +33,7 @@ sub _build_cycle_limit {
         my $dist    = ($dir_vec->[0]**2 + $dir_vec->[1]**2) ** 0.5;
 
         if ($dist < 1) { # we have arrived
-            return 1;
+            return $elapsed;
         }
 
         my $ratio   = $speed * $delta / $dist;
@@ -54,23 +50,29 @@ sub _build_cycle_limit {
         $target->xy($new);
 
         my $reached = $dist <= 1;
-        return 1 if $reached;
+        return $elapsed if $reached;
 
-    # maybe we passed the target
-
-# TODO problematic when subject is moving wildly and overshoot
-#      should switch to "did sign switch on dir vec?"
-        return 1 if $last_dist && ($dist >= $last_dist);
-        $last_dist = $dist;
+        # maybe we passed the target
+        my $new_dir_vec = [$to->[0] - $new->[0], $to->[1] - $new->[1]];
+        my ($x0, $y0, $x1, $y1) = (@$dir_vec, @$new_dir_vec);
+        if (
+            (
+                ($x0 > 0 && $x1 < 0 or $x0 < 0 && $x1 > 0) &&
+                ($y0 > 0 && $y1 < 0 or $y0 < 0 && $y1 > 0)
+            ) ||
+            (
+                ($x0 == 0 and $x1 == 0 and $y0*$y1 < 0) ||
+                ($y0 == 0 and $y1 == 0 and $x0*$x1 < 0)
+            )
+        ) {
+            my $overshoot = abs(V(@$new) - $to);
+            my $real_elapsed = $elapsed - $overshoot/$speed;
+            return $real_elapsed;
+        }
         return 0;
+
     };
 }
-
-before start_animation => sub {
-    my $self = shift;
-    my $last_dist = $self->last_dist;
-    $$last_dist = undef if $last_dist;
-};
 
 sub timer_tick {}
 
@@ -84,5 +86,13 @@ sub cycle_complete {
 
 __END__
 
+x y
+1 1  1
+0 0  0
+1 0  0
+0 1  0
 
-
+# TODO problematic when subject is moving wildly and overshoot
+#      should switch to "did sign switch on dir vec?"
+#        return 1 if $last_dist && ($dist >= $last_dist);
+#        $last_dist = $dist;

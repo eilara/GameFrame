@@ -18,6 +18,12 @@ sub start_animation_and_wait {
     $self->wait_for_animation_complete;
 }
 
+sub restart_animation_and_wait {
+    my $self = shift;
+    $self->restart_animation;
+    $self->wait_for_animation_complete;
+}
+
 1;
 
 
