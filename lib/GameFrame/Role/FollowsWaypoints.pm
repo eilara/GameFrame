@@ -12,7 +12,12 @@ has waypoints => (
     required => 1,
 );
 
-with 'GameFrame::Role::Movable';
+has start_time => (is => 'ro');
+
+has speed => (is => 'ro');
+
+with 'GameFrame::Role::Animated';
+#with 'GameFrame::Role::Movable';
 
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
@@ -23,10 +28,15 @@ around BUILDARGS => sub {
 sub follow_waypoints {
     my $self = shift;
     my @wps = @{ $self->waypoints->points_px };
-    $self->xy(shift @wps);
-    $self->move_to(V(@{ shift @wps }));
+    shift @wps;
+    my $t;
     for my $wp (@wps) {
-      $self->restart_move_to(V(@$wp));
+        my $ani = $self->create_animation({
+            attribute => 'xy_vec',
+            speed     => $self->speed,
+            to        => V(@$wp),
+        });
+        $t = $ani->start_animation_and_wait($t || $self->start_time || ());
     }
 }
 

@@ -53,14 +53,14 @@ my $waypoints = Waypoints->new(
 
 my $wave = Wave->new(
     duration   => 20,
-    waves      => 50,
+    waves      => 150,
     child_args => {
         child_class => Creep,
         size        => [21, 21],
         image       => 'creep_normal',
         layer       => 'creeps',
         waypoints   => $waypoints,
-        speed       => 30,
+        speed       => 150,
         start_hp    => 100,
         centered    => 1,
         health_bar  => [-11, -18, 22, 2],

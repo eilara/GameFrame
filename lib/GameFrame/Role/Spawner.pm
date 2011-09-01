@@ -11,6 +11,11 @@ has animation => (
     handles  => Animation,
 );
 
+# number of waves to spawn
+has waves_to_spawn => (is => 'rw');
+
+has spawn_start_time => (is => 'rw');
+
 with qw(
     GameFrame::Role::Animated
     GameFrame::Role::Active::Container
@@ -19,6 +24,7 @@ with qw(
 sub spawn {
     my ($self, %args) = @_;
     my $waves = delete $args{waves} || "Can't spawn with no waves";
+    $self->waves_to_spawn($waves);
     my $ani = $self->create_animation({
         attribute   => 'current_wave',
         proxy_class => IntProxy,
@@ -26,6 +32,7 @@ sub spawn {
         %args,
     });
     $self->animation($ani);
+    $self->spawn_start_time($ani->timeline->now);
     $ani->start_animation_and_wait;
 }
 
@@ -34,7 +41,10 @@ sub current_wave {
     my $current_wave = $self->next_child_idx;
     return $current_wave if @_ == 1;
     return if $current_wave >= $new_wave;
-    $self->create_next_child for 1..($new_wave - $current_wave);
+    my $ideal_spawn_time = $self->spawn_start_time + 
+                           $new_wave * $self->animation->duration / $self->waves_to_spawn;
+    $self->create_next_child(start_time => $ideal_spawn_time)
+        for 1..($new_wave - $current_wave);
 }
 
 1;

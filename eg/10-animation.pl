@@ -85,6 +85,7 @@ GameFrame::eg::AnimatedCircle->new(
 );
 
 # animate more than one attribute at once
+# note you can specify speed instead of duration
 GameFrame::eg::AnimatedCircle->new(
     xy      => [450, 50],
     radius  => 1,
@@ -98,7 +99,7 @@ GameFrame::eg::AnimatedCircle->new(
         },
         {
             attribute => 'x',
-            duration  => 1,
+            speed     => 100,
             to        => 350,
             bounce    => 1,
             forever   => 1,

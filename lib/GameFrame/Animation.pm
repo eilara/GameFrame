@@ -55,9 +55,11 @@ use GameFrame::Animation::Easing;
 
 extends 'GameFrame::Animation::Base';
 
-has from     => (is => 'ro', lazy_build => 1);
-has duration => (is => 'ro', isa => Num, required => 1);
-has ease     => (is => 'ro', isa => Str, default => 'linear');
+has from         => (is => 'ro', lazy_build => 1);
+has speed        => (is => 'ro', isa => Num, lazy_build => 1);
+has duration     => (is => 'ro', isa => Num, lazy_build => 1);
+has curve_length => (is => 'ro', isa => Num, lazy_build => 1);
+has ease         => (is => 'ro', isa => Str, default => 'linear');
 
 compose_from Proxy,
     has => {handles => [qw(
@@ -72,11 +74,23 @@ compose_from Curve,
         my $self = shift;
         return (from => $self->from);
     },
-    has => {handles => [qw(
-        solve_curve
-        solve_edge_value
-        curve_length
-    )]};
+    has => {handles => {
+        solve_curve          => 'solve_curve',
+        solve_edge_value     => 'solve_edge_value',
+        compute_curve_length => 'curve_length',
+    }};
+
+sub _build_duration {
+    my $self = shift;
+    return $self->curve_length / $self->speed;
+}
+
+sub _build_speed {
+    my $self = shift;
+    return $self->curve_length / $self->duration;
+}
+
+sub _build_curve_length { shift->compute_curve_length }
 
 sub _suggest_timer_sleep {
     my $self = shift;
@@ -122,6 +136,8 @@ sub compute_value_at {
 
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
+
+    die unless $args{duration} || $args{speed};
 
     # fix from_to
     if (my $from_to = delete($args{from_to})) {

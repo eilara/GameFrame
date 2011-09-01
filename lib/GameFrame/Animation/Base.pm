@@ -29,7 +29,7 @@ compose_from Timeline,
 
 with 'GameFrame::Role::Animation';
 
-sub start_animation { shift->_start_animation }
+sub start_animation { shift->_start_animation(@_) }
 
 sub _suggest_timer_sleep { () }
 

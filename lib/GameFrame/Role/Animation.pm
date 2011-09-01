@@ -14,14 +14,14 @@ requires qw(
 
 sub start_animation_and_wait {
     my $self = shift;
-    $self->start_animation;
-    $self->wait_for_animation_complete;
+    $self->start_animation(@_);
+    return $self->wait_for_animation_complete;
 }
 
 sub restart_animation_and_wait {
     my $self = shift;
-    $self->restart_animation;
-    $self->wait_for_animation_complete;
+    $self->restart_animation(@_);
+    return $self->wait_for_animation_complete;
 }
 
 1;

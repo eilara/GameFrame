@@ -67,6 +67,7 @@ sub wait_for_animation_complete {
     my $self = shift;
     return unless $self->is_timer_active;
     $self->_wait_for_animation_complete;
+    return $self->last_cycle_complete_time;
 }
 
 # call to signify animation has completed or animation has been stopped
