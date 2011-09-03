@@ -60,6 +60,7 @@ sub sequence {
 
 # TODO patch SDLx to allow setting frame num
 # TODO horrible things will happen if you provide out of bound frames here
+# TODO apply same accuracy fixes as in spawner
 sub current_frame {
     my ($self, $new_frame) = @_;
     my $sprite = $self->sprite;

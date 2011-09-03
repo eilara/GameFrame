@@ -108,10 +108,19 @@ sub _build_from {
     return $self->get_init_value;
 }
 
-sub timer_tick {
-    my ($self, $elapsed) = @_;
-    my $new_value = $self->compute_value_at($elapsed);
-    $self->set_attribute_value($new_value);
+sub get_timer_tick_cb {
+    my $self = shift;
+    weaken $self;
+    my $ease   = $self->ease;
+    my $easing = $GameFrame::Animation::Easing::{$ease};
+    return sub {
+        my $elapsed = shift;
+        my $time    = $elapsed / $self->duration; # normalized elapsed between 0 and 1
+        my $eased   = $easing->($time);
+        $eased      = 1 - $eased if $self->is_reversed_dir;
+        my $value   = $self->solve_curve($eased);
+        $self->set_attribute_value($value);
+    };
 }
 
 sub cycle_complete {
@@ -121,17 +130,6 @@ sub cycle_complete {
             $self->is_reversed_dir? 0: 1
         )
     );
-}
-
-sub compute_value_at {
-    my ($self, $elapsed) = @_;
-    my $ease   = $self->ease;
-    my $time   = $elapsed / $self->duration; # normalized elapsed between 0 and 1
-    my $easing = $GameFrame::Animation::Easing::{$ease};
-    my $eased  = $easing->($time);
-    $eased     = 1 - $eased if $self->is_reversed_dir;
-    my $value  = $self->solve_curve($eased);
-    return $value;
 }
 
 around BUILDARGS => sub {

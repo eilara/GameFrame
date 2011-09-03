@@ -74,7 +74,7 @@ sub _build_cycle_limit {
     };
 }
 
-sub timer_tick {}
+sub get_timer_tick_cb { sub {} }
 
 sub cycle_complete {
     my $self = shift;

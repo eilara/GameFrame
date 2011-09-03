@@ -12,7 +12,7 @@ use aliased 'GameFrame::Animation::Clock';
 # default timer sleep is 1/60th of a sec, which you can override by setting
 # cycle_sleep
 #
-# The provider must implement timer_tick and cycle_complete
+# The provider must implement get_provider_tick_cb and cycle_complete
 # they will be called with 1 parameter- the time elapsed since the start of the cycle
 # not including pause time
 #
@@ -40,10 +40,10 @@ use aliased 'GameFrame::Animation::Clock';
 
 my $MIN_SLEEP = 1 / 80;
 
-has provider => (is => 'ro', required => 1, weak_ref => 1, handles => [qw(
-    timer_tick
-    cycle_complete
-)]);
+has provider => (is => 'ro', required => 1, weak_ref => 1, handles => {
+    get_provider_tick_cb => 'get_timer_tick_cb',
+    cycle_complete       => 'cycle_complete',
+});
 
 has cycle_sleep => (is => 'ro', isa => Num, default => $MIN_SLEEP);
 
@@ -94,6 +94,9 @@ has total_cycle_pause => (is => 'rw');
 # timer tick closure
 has timer_tick_cb => (is => 'rw');
 
+# provider timer tick closure
+has provider_tick_cb => (is => 'rw');
+
 sub _build_clock { Clock->new }
 
 sub _build_timer {
@@ -127,11 +130,11 @@ sub BUILD {
     $self->total_cycle_pause   (\$total_cycle_pause);
     $self->cycle_start_time    (\$cycle_start_time);
 
-    my $clock    = $self->clock;
-    my $provider = $self->provider;
-    my $limit    = $self->cycle_limit;
+    my $clock = $self->clock;
+    my $limit = $self->cycle_limit;
+    my $cb    = $self->get_provider_tick_cb;
+    $self->provider_tick_cb($cb);
     weaken $self;
-    weaken $provider;
     $self->timer_tick_cb(sub{
 
         my $now               = $clock->now;
@@ -148,7 +151,7 @@ sub BUILD {
             return;
         }
 
-        $provider->timer_tick($elapsed, $delta);
+        $cb->($elapsed, $delta);
     });
 }
 
@@ -167,7 +170,7 @@ sub start {
     my ($self, $cycle_start_time) = @_;
     $self->_on_first_timer_tick($cycle_start_time);
     $self->start_timer;
-    $self->timer_tick(0, 0);
+    $self->provider_tick_cb->(0, 0);
 }
 
 sub restart {
@@ -177,7 +180,7 @@ sub restart {
         unless $last_cycle_complete_time;
     $self->_on_first_timer_tick($last_cycle_complete_time);
     $self->start_timer;
-    $self->timer_tick(0, 0);
+    $self->provider_tick_cb->(0, 0);
 }
 
 # stop is split into _stop and stop: _stop is called when cycle
@@ -238,10 +241,8 @@ sub resume {
     ${ $self->total_cycle_pause } = ${ $self->total_cycle_pause } + $pause_time;
     $self->pause_start_time(undef); 
     ${ $self->last_tick_time } = $now;
-#    $self->last_tick_time($now);
     $self->start_timer;
     $self->timer_tick_cb->();
-#$self->_on_timer_tick;
 }
 
 1;

@@ -1,6 +1,6 @@
 package GameFrame::Animation::Proxy::Vector;
 
-# TODO this is actually an int vector
+# TODO this is actually a 2D int vector
 
 use Moose;
 
