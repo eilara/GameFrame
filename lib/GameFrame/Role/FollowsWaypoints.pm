@@ -17,7 +17,6 @@ has start_time => (is => 'ro');
 has speed => (is => 'ro');
 
 with 'GameFrame::Role::Animated';
-#with 'GameFrame::Role::Movable';
 
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;

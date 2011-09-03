@@ -64,10 +64,10 @@ sub on_mouse_button_up {
     my $to       = $self->xy_vec + VP($angle, $dist); # missle range=300
 
     $self->create_next_child(
-        xy_vec   => $from,
-        to       => $to,
-        angle    => $angle,
-        speed    => $speed,
+        xy_vec => $from,
+        to     => $to,
+        angle  => $angle,
+        speed  => $speed,
     );
 }
 
