@@ -9,8 +9,6 @@ use aliased 'GameFrame::Animation::Clock';
 # a timer
 # 
 # construct with a provider object and a cycle limit callback
-# default timer sleep is 1/60th of a sec, which you can override by setting
-# cycle_sleep
 #
 # The provider must implement get_provider_tick_cb and cycle_complete
 # they will be called with 1 parameter- the time elapsed since the start of the cycle
@@ -38,14 +36,10 @@ use aliased 'GameFrame::Animation::Clock';
 # * is_active while paused???
 # * elastic time
 
-my $MIN_SLEEP = 1 / 80;
-
 has provider => (is => 'ro', required => 1, weak_ref => 1, handles => {
     get_provider_tick_cb => 'get_timer_tick_cb',
     cycle_complete       => 'cycle_complete',
 });
-
-has cycle_sleep => (is => 'ro', isa => Num, default => $MIN_SLEEP);
 
 has cycle_limit => (
     traits   => ['Code'],
@@ -64,7 +58,6 @@ has clock => (is => 'ro', isa => Clock, lazy_build => 1,
 has timer => (is => 'ro', lazy_build => 1, handles => {
     start_timer     => 'start',
     stop_timer      => 'stop',
-    set_timer       => 'set',
     is_timer_active => 'is_active',
 });
 
@@ -106,15 +99,6 @@ sub _build_timer {
     return $self->build_periodic_timer(0, 1, $self->timer_tick_cb);
 }
 
-# if cycle sleep is given, default it, in case it is too small
-around BUILDARGS => sub {
-    my ($orig, $class, %args) = @_;
-    my $cycle_sleep = $args{cycle_sleep};
-    delete($args{cycle_sleep})
-        if $cycle_sleep && ($cycle_sleep < $MIN_SLEEP);
-    return $class->$orig(%args);
-};
-
 sub DEMOLISH { $_[0]->stop_timer if $_[0]->timer }
 
 sub BUILD {
@@ -137,7 +121,7 @@ sub BUILD {
     weaken $self;
     $self->timer_tick_cb(sub{
 
-        my $now               = $clock->now;
+        my $now               = shift || $clock->now;
         my $delta             = $now - $last_tick_time;
         $last_tick_time       = $now;
         my $elapsed           = $now - $cycle_start_time - $total_cycle_pause;
@@ -161,7 +145,6 @@ sub _on_first_timer_tick {
     ${ $self->cycle_start_time } = $cycle_start_time;
     ${ $self->last_tick_time   } = $cycle_start_time;
     ${ $self->total_sleep_computed } = 0;
-    $self->set_timer($cycle_start_time, $self->cycle_sleep, 0);
 }
 
 sub _on_final_timer_tick {}

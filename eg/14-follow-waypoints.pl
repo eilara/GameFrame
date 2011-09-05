@@ -24,7 +24,6 @@ sub start {
 package main;
 use strict;
 use warnings;
-use FindBin qw($Bin);
 use aliased 'GameFrame::App';
 use aliased 'GameFrame::Grid::Markers';
 use aliased 'GameFrame::Grid::Waypoints';
@@ -60,7 +59,7 @@ GameFrame::eg::WaypointCrawler->new(
     image     => 'arrow',
     layer     => 'top',
     waypoints => $waypoints,
-    speed     => 100,
+    speed     => 200,
     centered  => 1,
 );
 

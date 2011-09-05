@@ -12,9 +12,4 @@ around set_attribute_value => sub {
     $self->$orig($round);
 };
 
-sub compute_timer_sleep {
-    my ($self, $speed) = @_;
-    return (cycle_sleep => 1/$speed);
-}
-
 1;

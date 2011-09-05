@@ -18,10 +18,4 @@ sub set_attribute_value {
     $self->target->$att($value);
 }
 
-# default proxy has nothing to say about preferred cycle sleep between ticks
-sub compute_timer_sleep {
-    my ($self, $speed) = @_;
-    return ();
-}
-
 1;

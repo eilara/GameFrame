@@ -11,9 +11,4 @@ around set_attribute_value => sub {
     $self->$orig([map { sprintf('%.0f', $_) } @$value]);
 };
 
-sub compute_timer_sleep {
-    my ($self, $speed) = @_;
-    return (cycle_sleep => 1/$speed);
-}
-
 1;

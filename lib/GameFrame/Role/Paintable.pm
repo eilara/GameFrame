@@ -65,7 +65,7 @@ sub _build_surface { $SDL_Main_Surface }
 
 sub sdl_paint {
     my $self = shift;
-    return unless $self->is_visible;
+    return unless $self->{is_visible};
     $self->paint;
 }
 

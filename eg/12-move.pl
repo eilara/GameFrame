@@ -29,9 +29,9 @@ sub follow {
     # note we use create_move_animation instead of create_animation
     # which is sugar for create_animation on xy
     my $animation = $self->create_move_animation({
-        duration  => 1,
-        to        => $xy,
-        ease      => 'swing',
+        speed  => 300,
+        to     => $xy,
+        ease   => 'swing',
     });
 
     # save the animation so we can stop it on next follow()

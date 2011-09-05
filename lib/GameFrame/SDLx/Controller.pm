@@ -23,7 +23,7 @@ sub run {
         while (1) {
            $paint_cb->();
 # lower if under load
-           Coro::AnyEvent::sleep 1/80;
+           Coro::AnyEvent::sleep 1/60;
         }
     };
 

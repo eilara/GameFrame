@@ -14,10 +14,11 @@
     ],
 
     crawler_args => [
-        rect       => [0, 0, 22, 26],
+        size       => [22, 26],
         image      => 'arrow',
         layer      => 'top',
         speed      => 200,
+        centered   => 1,
     ],
 
     waypoints_args => [

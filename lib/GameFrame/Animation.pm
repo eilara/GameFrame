@@ -65,7 +65,6 @@ compose_from Proxy,
     has => {handles => [qw(
         set_attribute_value
         get_init_value
-        compute_timer_sleep
     )]};
 
 compose_from Curve,
@@ -91,12 +90,6 @@ sub _build_speed {
 }
 
 sub _build_curve_length { shift->compute_curve_length }
-
-sub _suggest_timer_sleep {
-    my $self = shift;
-    my $speed = $self->curve_length / $self->duration;
-    return $self->compute_timer_sleep($speed || 100); # if curve len=0, smallest sleep possible
-}
 
 sub _build_cycle_limit {
     my $self = shift;

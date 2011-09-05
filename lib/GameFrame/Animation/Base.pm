@@ -13,7 +13,6 @@ compose_from Timeline,
         return (
             cycle_limit => $self->_build_cycle_limit,
             provider    => $self,
-            $self->_suggest_timer_sleep,
         );
     },        
     has => {handles => {
@@ -30,8 +29,6 @@ compose_from Timeline,
 with 'GameFrame::Role::Animation';
 
 sub start_animation { shift->_start_animation(@_) }
-
-sub _suggest_timer_sleep { () }
 
 1;
 
