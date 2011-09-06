@@ -7,13 +7,8 @@ use EV;
 my $Timer;
 my $Callbacks = Set::Object->new;
 
-sub BUILD {
-    my $self = shift;
-    $self->init unless $Timer;
-}
-
-sub init {
-    $Timer = EV::periodic EV::now, 1/60, 0, sub {
+sub get_update_cb {
+    return sub {
         my $t = EV::time;
         $_->($t) for $Callbacks->members;
     };
