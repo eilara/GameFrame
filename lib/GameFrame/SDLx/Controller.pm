@@ -19,16 +19,30 @@ sub run {
     my $self = shift;
 
     async {
-        my $paint_cb  = $self->paint_cb;
-        my $event_cb  = $self->event_cb;
-        my $update_cb = GameFrame::Animation::Clock->get_update_cb;
-        my $event     = SDL::Event->new;
+        my $paint_cb    = $self->paint_cb;
+        my $event_cb    = $self->event_cb;
+        my $update_cb   = GameFrame::Animation::Clock->get_update_cb;
+        my $event       = SDL::Event->new;
+        my $ideal_tick  = 1/50;
+        my $carry = 0;
         while (1) {
+            my $tick_begin = EV::time;
             SDL::Events::pump_events();
             $event_cb->($event) while SDL::Events::poll_event($event);
-            Coro::AnyEvent::poll;
             $update_cb->();
             $paint_cb->();
+            my $tick_end = EV::time;
+            my $tick_duration = $tick_begin - $tick_end;
+            my $expected_duration = $ideal_tick + $carry;
+                Coro::AnyEvent::poll;
+#           if ($tick_duration <= ($ideal_tick - 0.005)) {
+#               my $sleep = $ideal_tick - $tick_duration;
+#               Coro::AnyEvent::sleep $sleep;
+#               $carry = EV::time - $tick_end - $sleep;
+##               print "$carry\n";
+#           } else {
+#               Coro::AnyEvent::poll;
+#           }
         }
     };
 
