@@ -32,13 +32,27 @@ sub run {
             $update_cb->();
             $paint_cb->();
             my $tick_end = EV::time;
-            my $tick_duration = $tick_begin - $tick_end;
-            my $expected_duration = $ideal_tick + $carry;
+            my $actual_tick_duration = $tick_end - $tick_begin;
+            my $expected_tick_duration = $ideal_tick - $carry;
+            my $left_in_tick = $expected_tick_duration - $actual_tick_duration;
+print "expected-actual=${\( sprintf('%.4f',$left_in_tick) )}\n";            
+if ($left_in_tick < 0.01) {
+    print "poll\n";
                 Coro::AnyEvent::poll;
+} else { 
+
+    my $x1=EV::time;
+    while ((EV::time - $x1) < $left_in_tick - 0.01) {
+               Coro::AnyEvent::sleep $left_in_tick;
+    }               
+        print "sleep was=${\( sprintf('%.4f',EV::time - $x1) )}\n";
+
+}
+               $carry = EV::time - $tick_begin - $ideal_tick;
+               print "carry=$carry\n";
 #           if ($tick_duration <= ($ideal_tick - 0.005)) {
 #               my $sleep = $ideal_tick - $tick_duration;
 #               Coro::AnyEvent::sleep $sleep;
-#               $carry = EV::time - $tick_end - $sleep;
 ##               print "$carry\n";
 #           } else {
 #               Coro::AnyEvent::poll;
