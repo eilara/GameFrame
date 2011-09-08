@@ -7,81 +7,42 @@ use Coro::AnyEvent;
 use AnyEvent;
 use Coro;
 
+use SDL;
+use SDLx::FPS;
 use SDL::Event;
 use SDL::Events;
 
-# TODO frame paint should be lowest priority?
-#      coro signals for events instead of polling?
+my $FPS = 62;
 
 has [qw(paint_cb event_cb)] => (is => 'rw');
 
 sub run {
     my $self = shift;
-
+    my $fps = SDLx::FPS->new(fps => $FPS);
+    my $is_slow;
     async {
         my $paint_cb    = $self->paint_cb;
         my $event_cb    = $self->event_cb;
         my $update_cb   = GameFrame::Animation::Clock->get_update_cb;
         my $event       = SDL::Event->new;
-        my $ideal_tick  = 1/50;
-        my $carry = 0;
+        my $tick_start  = EV::time;
+        my $is_slow;
         while (1) {
-            my $tick_begin = EV::time;
             SDL::Events::pump_events();
             $event_cb->($event) while SDL::Events::poll_event($event);
             $update_cb->();
-            $paint_cb->();
+            $paint_cb->() unless $is_slow;
+            Coro::AnyEvent::poll;
+            $fps->delay;
             my $tick_end = EV::time;
-            my $actual_tick_duration = $tick_end - $tick_begin;
-            my $expected_tick_duration = $ideal_tick - $carry;
-            my $left_in_tick = $expected_tick_duration - $actual_tick_duration;
-print "expected-actual=${\( sprintf('%.4f',$left_in_tick) )}\n";            
-if ($left_in_tick < 0.01) {
-    print "poll\n";
-                Coro::AnyEvent::poll;
-} else { 
-
-    my $x1=EV::time;
-    while ((EV::time - $x1) < $left_in_tick - 0.01) {
-               Coro::AnyEvent::sleep $left_in_tick;
-    }               
-        print "sleep was=${\( sprintf('%.4f',EV::time - $x1) )}\n";
-
-}
-               $carry = EV::time - $tick_begin - $ideal_tick;
-               print "carry=$carry\n";
-#           if ($tick_duration <= ($ideal_tick - 0.005)) {
-#               my $sleep = $ideal_tick - $tick_duration;
-#               Coro::AnyEvent::sleep $sleep;
-##               print "$carry\n";
-#           } else {
-#               Coro::AnyEvent::poll;
-#           }
+            if ($is_slow) {
+                $is_slow = 0;
+            } elsif ((1/($tick_end - $tick_start) + 15) < $FPS) {
+                $is_slow = 1;
+            }
+            $tick_start = $tick_end;
         }
     };
-
-
-
-#
-#    async {
-#        my $paint_cb = $self->paint_cb;
-#        while (1) {
-#           $paint_cb->();
-## lower if under load
-#           Coro::AnyEvent::sleep 1/60;
-#        }
-#    };
-#
-#    async {
-#        my $event_cb = $self->event_cb;
-#        my $event = SDL::Event->new;
-#        while (1) {
-#            SDL::Events::pump_events();
-#            $event_cb->($event) while SDL::Events::poll_event($event);
-## TODO fix
-#            Coro::AnyEvent::sleep 1/50;
-#        }
-#    };
 
     EV::loop;
 }
@@ -111,3 +72,14 @@ __END__
                         / float( SKIP_TICKS );
         display_game( interpolation );
     }
+#print "expected-actual=${\( sprintf('%.4f',$left_in_tick) )}\n";            
+#my $x1=EV::time;
+#print "sleep was=${\( sprintf('%.4f',EV::time - $x1) )}   carry=$carry\n";
+#            my $tick_end = EV::time;
+#            my $actual_tick_duration = $tick_end - $tick_begin;
+#            my $expected_tick_duration = $ideal_tick - $carry;
+#            my $left_in_tick = $expected_tick_duration - $actual_tick_duration;
+#            SDL::delay(1000*$left_in_tick) if $left_in_tick > 0;
+#            $carry = EV::time - $tick_begin - $ideal_tick;
+        my $ideal_tick  = 1/62;
+        my $carry       = 0;

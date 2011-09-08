@@ -52,8 +52,8 @@ my $waypoints = Waypoints->new(
 );
 
 my $wave = Wave->new(
-    duration   => 1,
-    waves      => 5,
+    duration   => 15,
+    waves      => 100,
     child_args => {
         child_class => Creep,
         size        => [21, 21],
