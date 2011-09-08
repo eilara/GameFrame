@@ -21,11 +21,11 @@ sub run {
     my $fps = SDLx::FPS->new(fps => $FPS);
     my $is_slow;
     async {
-        my $paint_cb    = $self->paint_cb;
-        my $event_cb    = $self->event_cb;
-        my $update_cb   = GameFrame::Animation::Clock->get_update_cb;
-        my $event       = SDL::Event->new;
-        my $tick_start  = EV::time;
+        my $paint_cb   = $self->paint_cb;
+        my $event_cb   = $self->event_cb;
+        my $update_cb  = GameFrame::Animation::Clock->get_update_cb;
+        my $event      = SDL::Event->new;
+        my $tick_start = EV::time;
         my $is_slow;
         while (1) {
             SDL::Events::pump_events();
@@ -34,6 +34,7 @@ sub run {
             $paint_cb->() unless $is_slow;
             Coro::AnyEvent::poll;
             $fps->delay;
+
             my $tick_end = EV::time;
             if ($is_slow) {
                 $is_slow = 0;

@@ -60,7 +60,7 @@ compose_from Controller;
 # our helper for managing layers, the layer manager
 compose_from LayerManager,
     prefix => 'layer_manager',
-    has    => {handles => [qw(add_sdl_paint_listener paint)]};
+    has    => {handles => [qw(paint)]};
 
 # all SDL events are fired through this event
 with 'MooseX::Role::Listenable' => {event => 'sdl_event'};
@@ -69,7 +69,7 @@ sub BUILD {
     my $self = shift;
 
     # must be called before creating paintables or sdl event handlers
-    GameFrame::Role::Paintable::Set_SDL_Paint_Observable($self);
+    GameFrame::Role::Paintable::Set_Layer_Manager($self->layer_manager);
     GameFrame::Role::Paintable::Set_SDL_Main_Surface($self->sdl);
     GameFrame::Role::SDLEventHandler::Set_SDL_Event_Observable($self);
     GameFrame::ResourceManager::Set_Path($self->resources)

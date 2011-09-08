@@ -1,23 +1,29 @@
 package GameFrame::App::Layer;
 
 use Moose;
+use Scalar::Util qw(weaken);
 
-with 'MooseX::Role::Listenable' => {event => 'sdl_paint'};
+has children => (is => 'rw', default => sub { [] });
 
-# only called on the layer called new_layer
-# empties all paintables from this layer into the correct layer
-# from the layer map
-sub empty_into_layer_map {
-    my ($self, $layers) = @_;
-    my $all = $self->_sdl_paint_listeners;
-    return unless $all->size;
-    for my $l ($all->members) {
-        my $layer = $l->layer; # ask the paintable for its layer
-        my $final_layer = $layers->{$layer};
-        die "No such layer=$layer" unless $final_layer;
-        $final_layer->add_sdl_paint_listener($l);
+sub add_paintable {
+    my ($self, $paintable) = @_;
+    my $children = $self->children;
+    push @$children, $paintable;
+    weaken $children->[-1];
+}
+
+sub paint {
+    my $self = shift;
+    my $children = $self->children;
+    my $are_dead;
+    for my $child (@$children) {
+        if ($child)        { $child->paint }
+        elsif (!$are_dead) { $are_dead = 1 }
     }
-    $all->clear;
+    if ($are_dead) {
+        my $new_children = [grep { defined $_ } @$children];
+        weaken($new_children->[$_]) for 1..scalar(@$new_children);
+    }
 }
 
 1;

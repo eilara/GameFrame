@@ -25,9 +25,9 @@ use Moose::Role;
 use MooseX::Types::Moose qw(Bool Str);
 
 # set these two before creating any paintables
-my ($SDL_Paint_Observable, $SDL_Main_Surface);
-sub Set_SDL_Paint_Observable { $SDL_Paint_Observable = shift }
-sub Set_SDL_Main_Surface     { $SDL_Main_Surface     = shift }
+my ($Layer_Manager, $SDL_Main_Surface);
+sub Set_Layer_Manager    { $Layer_Manager     = shift }
+sub Set_SDL_Main_Surface { $SDL_Main_Surface  = shift }
 
 requires 'paint';
 
@@ -73,7 +73,7 @@ sub sdl_paint {
 sub BUILD {}
 before 'BUILD' => sub {
     my $self = shift;
-    $SDL_Paint_Observable->add_sdl_paint_listener($self)
+    $Layer_Manager->add_paintable_to_layer($self->layer, $self)
         if $self->auto_paint;
 };
 
