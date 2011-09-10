@@ -83,7 +83,7 @@ has pause_start_time => (is => 'rw');
 # has sleep_after_resume => (is => 'rw', default => 0);
 
 # how much time was paused in this cycle
-has total_cycle_pause => (is => 'rw');
+has total_cycle_pause => (is => 'rw', default => 0);
 
 # timer tick closure
 has timer_tick_cb => (is => 'rw');
@@ -104,14 +104,10 @@ sub DEMOLISH { $_[0]->stop_timer if $_[0]->timer }
 
 sub BUILD {
     my $self = shift;
-    my (
-        $total_cycle_pause,
-        $cycle_start_time,
-    ) = (0, 0, 0);
-    alias my $last_tick_time       = $self->last_tick_time;
-    alias my $total_sleep_computed = $self->total_sleep_computed;
-    alias my $cycle_start_time     = $self->cycle_start_time;
-    $self->total_cycle_pause   (\$total_cycle_pause);
+    alias my $last_tick_time       = $self->{last_tick_time};
+    alias my $total_sleep_computed = $self->{total_sleep_computed};
+    alias my $cycle_start_time     = $self->{cycle_start_time};
+    alias my $total_cycle_pause    = $self->{total_cycle_pause};
 
     my $clock = $self->clock;
     my $limit = $self->cycle_limit;
@@ -179,13 +175,13 @@ sub _stop {
     $self->last_cycle_complete_time(
         $self->cycle_start_time +
         ($ideal_cycle_duration || $self->total_sleep_computed) +
-        ${ $self->total_cycle_pause }
+        $self->total_cycle_pause
     );
 
     $self->cycle_start_time(0);
     $self->last_tick_time(0);
     $self->total_sleep_computed(0);
-    ${ $self->total_cycle_pause }    = 0;
+    $self->total_cycle_pause(0);
 
     $self->stop_timer;
 }
@@ -206,7 +202,7 @@ sub resume {
 
     my $now = $resume_time || $self->now;
     my $pause_time = $now - $self->pause_start_time;
-    ${ $self->total_cycle_pause } = ${ $self->total_cycle_pause } + $pause_time;
+    $self->total_cycle_pause($self->total_cycle_pause + $pause_time);
     $self->pause_start_time(undef); 
     $self->last_tick_time($now);
     $self->start_timer;

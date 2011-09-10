@@ -105,11 +105,11 @@ sub _build_from {
 sub build_timer_tick_cb {
     my $self = shift;
     weaken $self;
-    my $ease   = $self->ease;
-    my $easing = $GameFrame::Animation::Easing::{$ease};
-    alias my $duration = $self->duration;
-    alias my $curve = $self->curve;
-    alias my $proxy = $self->proxy;
+    my $ease           = $self->ease;
+    my $easing         = $GameFrame::Animation::Easing::{$ease};
+    alias my $duration = $self->{duration};
+    alias my $curve    = $self->curve;
+    alias my $proxy    = $self->proxy;
     return sub {
         my $elapsed = shift;
         my $time    = $elapsed / $duration; # normalized elapsed between 0 and 1
