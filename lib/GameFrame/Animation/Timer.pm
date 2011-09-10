@@ -110,8 +110,8 @@ sub BUILD {
     ) = (0, 0, 0);
     alias my $last_tick_time       = $self->last_tick_time;
     alias my $total_sleep_computed = $self->total_sleep_computed;
+    alias my $cycle_start_time     = $self->cycle_start_time;
     $self->total_cycle_pause   (\$total_cycle_pause);
-    $self->cycle_start_time    (\$cycle_start_time);
 
     my $clock = $self->clock;
     my $limit = $self->cycle_limit;
@@ -140,7 +140,7 @@ sub BUILD {
 sub _on_first_timer_tick {
     my ($self, $cycle_start_time) = @_;
     $cycle_start_time ||= $self->now;
-    ${ $self->cycle_start_time } = $cycle_start_time;
+    $self->cycle_start_time($cycle_start_time);
     $self->last_tick_time($cycle_start_time);
     $self->total_sleep_computed(0);
 }
@@ -177,12 +177,12 @@ sub _stop {
     # remember the last cycle start time in case we want to restart
     # and avoid timer drift
     $self->last_cycle_complete_time(
-        ${ $self->cycle_start_time } +
+        $self->cycle_start_time +
         ($ideal_cycle_duration || $self->total_sleep_computed) +
         ${ $self->total_cycle_pause }
     );
 
-    ${ $self->cycle_start_time }     = 0;
+    $self->cycle_start_time(0);
     $self->last_tick_time(0);
     $self->total_sleep_computed(0);
     ${ $self->total_cycle_pause }    = 0;
