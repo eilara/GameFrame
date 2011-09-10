@@ -74,8 +74,6 @@ sub _build_cycle_limit {
     };
 }
 
-sub get_timer_tick_cb { sub {} }
-
 sub cycle_complete {
     my $self = shift;
     $self->xy_vec($self->compute_destination);

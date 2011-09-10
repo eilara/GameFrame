@@ -41,6 +41,7 @@ package GameFrame::Animation;
 
 use Moose;
 use MooseX::Types::Moose qw(Bool Num Int Str ArrayRef);
+use Data::Alias;
 use Scalar::Util qw(weaken);
 use Math::Vector::Real;
 use GameFrame::MooseX;
@@ -101,18 +102,21 @@ sub _build_from {
     return $self->get_init_value;
 }
 
-sub get_timer_tick_cb {
+sub build_timer_tick_cb {
     my $self = shift;
     weaken $self;
     my $ease   = $self->ease;
     my $easing = $GameFrame::Animation::Easing::{$ease};
+    alias my $duration = $self->duration;
+    alias my $curve = $self->curve;
+    alias my $proxy = $self->proxy;
     return sub {
         my $elapsed = shift;
-        my $time    = $elapsed / $self->duration; # normalized elapsed between 0 and 1
+        my $time    = $elapsed / $duration; # normalized elapsed between 0 and 1
         my $eased   = $easing->($time);
         $eased      = 1 - $eased if $self->is_reversed_dir;
-        my $value   = $self->solve_curve($eased);
-        $self->set_attribute_value($value);
+        my $value   = $curve->solve_curve($eased);
+        $proxy->set_attribute_value($value);
     };
 }
 

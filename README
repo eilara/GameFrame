@@ -8,6 +8,7 @@ aliased
 Moose
 Coro
 SDL
+Data::Alias
 Set::Object
 List::MoreUtils
 MooseX::Role::Listenable

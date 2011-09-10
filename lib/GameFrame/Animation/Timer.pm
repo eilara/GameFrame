@@ -2,6 +2,7 @@ package GameFrame::Animation::Timer;
 
 use Moose;
 use MooseX::Types::Moose qw(Num CodeRef);
+use Data::Alias;
 use Scalar::Util qw(weaken);
 use GameFrame::MooseX;
 use aliased 'GameFrame::Animation::Clock';
@@ -62,16 +63,16 @@ has timer => (is => 'ro', lazy_build => 1, handles => {
 });
 
 # when did current cycle start
-has cycle_start_time => (is => 'rw');
+has cycle_start_time => (is => 'rw', default => 0);
 
 # when did the last cycle complete, in case we are restarting a cycle
 has last_cycle_complete_time => (is => 'rw');
 
 # sum of all sleep performed so far in cycle
-has total_sleep_computed => (is => 'rw');
+has total_sleep_computed => (is => 'rw', default => 0);
 
 # when was last tick
-has last_tick_time => (is => 'rw');
+has last_tick_time => (is => 'rw', default => 0);
 
 # when was last pause started, if in pause
 has pause_start_time => (is => 'rw');
@@ -88,7 +89,7 @@ has total_cycle_pause => (is => 'rw');
 has timer_tick_cb => (is => 'rw');
 
 # provider timer tick closure
-has provider_tick_cb => (is => 'rw');
+has provider_tick_cb => (is => 'ro');
 
 sub _build_clock { Clock->new }
 
@@ -104,20 +105,17 @@ sub DEMOLISH { $_[0]->stop_timer if $_[0]->timer }
 sub BUILD {
     my $self = shift;
     my (
-        $last_tick_time,
-        $total_sleep_computed,
         $total_cycle_pause,
         $cycle_start_time,
     ) = (0, 0, 0);
-    $self->last_tick_time      (\$last_tick_time);
-    $self->total_sleep_computed(\$total_sleep_computed);
+    alias my $last_tick_time       = $self->last_tick_time;
+    alias my $total_sleep_computed = $self->total_sleep_computed;
     $self->total_cycle_pause   (\$total_cycle_pause);
     $self->cycle_start_time    (\$cycle_start_time);
 
     my $clock = $self->clock;
     my $limit = $self->cycle_limit;
-    my $cb    = $self->get_provider_tick_cb;
-    $self->provider_tick_cb($cb);
+    my $cb    = $self->provider_tick_cb;
     weaken $self;
     $self->timer_tick_cb(sub{
 
@@ -143,8 +141,8 @@ sub _on_first_timer_tick {
     my ($self, $cycle_start_time) = @_;
     $cycle_start_time ||= $self->now;
     ${ $self->cycle_start_time } = $cycle_start_time;
-    ${ $self->last_tick_time   } = $cycle_start_time;
-    ${ $self->total_sleep_computed } = 0;
+    $self->last_tick_time($cycle_start_time);
+    $self->total_sleep_computed(0);
 }
 
 sub _on_final_timer_tick {}
@@ -180,16 +178,14 @@ sub _stop {
     # and avoid timer drift
     $self->last_cycle_complete_time(
         ${ $self->cycle_start_time } +
-        ($ideal_cycle_duration || ${ $self->total_sleep_computed }) +
+        ($ideal_cycle_duration || $self->total_sleep_computed) +
         ${ $self->total_cycle_pause }
     );
 
     ${ $self->cycle_start_time }     = 0;
-    ${ $self->last_tick_time }       = 0;
-    ${ $self->total_sleep_computed } = 0;
+    $self->last_tick_time(0);
+    $self->total_sleep_computed(0);
     ${ $self->total_cycle_pause }    = 0;
-# TODO support sleep after resume for when sleep cycle is big
-# sleep_after_resume
 
     $self->stop_timer;
 }
@@ -199,19 +195,8 @@ sub pause {
     return unless $self->is_timer_active;
 
     my $now = $pause_start_time || $self->now;
-
-# TODO support sleep after resume for when sleep cycle is big
-#    my $cycle_start_time     = $self->cycle_start_time;
-#    my $total_cycle_pause    = $self->total_cycle_pause;
-#    my $total_sleep_computed = $self->total_sleep_computed + $self->cycle_sleep;
-#    my $actual_sleep         = $now - $cycle_start_time - $total_cycle_pause;
-#    my $sleep_after_resume   = $total_sleep_computed - $actual_sleep;
-#    $self->sleep_after_resume($sleep_after_resume);
-
     $self->pause_start_time($now);
-
     $self->stop_timer;
-#    print "PAUSING now=$now actual_sleep=$actual_sleep cycle_start_time=$cycle_start_time total_cycle_pause=$total_cycle_pause sleep_after_resume=$sleep_after_resume total_sleep_computed=$total_sleep_computed\n";
 }
 
 sub resume {
@@ -223,7 +208,7 @@ sub resume {
     my $pause_time = $now - $self->pause_start_time;
     ${ $self->total_cycle_pause } = ${ $self->total_cycle_pause } + $pause_time;
     $self->pause_start_time(undef); 
-    ${ $self->last_tick_time } = $now;
+    $self->last_tick_time($now);
     $self->start_timer;
     $self->timer_tick_cb->();
 }

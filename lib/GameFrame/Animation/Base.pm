@@ -11,8 +11,9 @@ compose_from Timeline,
         my $self = shift;
         weaken $self;
         return (
-            cycle_limit => $self->_build_cycle_limit,
-            provider    => $self,
+            cycle_limit      => $self->_build_cycle_limit,
+            provider         => $self,
+            provider_tick_cb => $self->build_timer_tick_cb,
         );
     },        
     has => {handles => {
@@ -29,6 +30,8 @@ compose_from Timeline,
 with 'GameFrame::Role::Animation';
 
 sub start_animation { shift->_start_animation(@_) }
+
+sub build_timer_tick_cb { sub {} }
 
 1;
 
