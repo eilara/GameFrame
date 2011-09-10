@@ -62,6 +62,12 @@ has timer => (is => 'ro', lazy_build => 1, handles => {
     is_timer_active => 'is_active',
 });
 
+has is_reversed_dir  => (
+    is      => 'rw',
+    isa     => 'Bool',
+    default => 0,
+);
+
 # when did current cycle start
 has cycle_start_time => (is => 'rw', default => 0);
 
@@ -108,13 +114,13 @@ sub BUILD {
     alias my $total_sleep_computed = $self->{total_sleep_computed};
     alias my $cycle_start_time     = $self->{cycle_start_time};
     alias my $total_cycle_pause    = $self->{total_cycle_pause};
+    alias my $is_reversed_dir      = $self->{is_reversed_dir};
 
     my $clock = $self->clock;
     my $limit = $self->cycle_limit;
     my $cb    = $self->provider_tick_cb;
     weaken $self;
     $self->timer_tick_cb(sub{
-
         my $now               = shift || $clock->now;
         my $delta             = $now - $last_tick_time;
         $last_tick_time       = $now;
@@ -129,7 +135,7 @@ sub BUILD {
             return;
         }
 
-        $cb->($elapsed, $delta);
+        $cb->($elapsed, $delta, $is_reversed_dir);
     });
 }
 
@@ -157,7 +163,7 @@ sub restart {
         unless $last_cycle_complete_time;
     $self->_on_first_timer_tick($last_cycle_complete_time);
     $self->start_timer;
-    $self->provider_tick_cb->(0, 0);
+    $self->provider_tick_cb->(0, 0, $self->is_reversed_dir);
 }
 
 # stop is split into _stop and stop: _stop is called when cycle

@@ -25,15 +25,6 @@ has repeat => (
     handles => {dec_repeat => 'dec'},
 );
 
-# filpped on bounce
-has is_reversed_dir  => (
-    traits  => ['Bool'],
-    is      => 'rw',
-    isa     => 'Bool',
-    default => 0,
-    handles => {toggle_dir => 'toggle', set_forward_dir => 'unset'},
-);
-
 # signals to outside listener of animation complete, wait for it with
 # wait_for_animation_complete() method
 has animation_complete_signal => (
@@ -56,7 +47,7 @@ sub _on_final_timer_tick {
     my $self = shift;
     if ($self->forever or $self->repeat > 1) {
         $self->dec_repeat unless $self->forever;
-        $self->toggle_dir if $self->bounce;
+        $self->is_reversed_dir($self->is_reversed_dir? 0: 1) if $self->bounce;
         $self->restart;
     } else {
         $self->_animation_complete;
@@ -73,7 +64,7 @@ sub wait_for_animation_complete {
 # call to signify animation has completed or animation has been stopped
 sub _animation_complete {
     my $self = shift;
-    $self->set_forward_dir;
+    $self->is_reversed_dir(0);
     $self->broadcast_animation_complete;
 }
 

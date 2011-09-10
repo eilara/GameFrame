@@ -111,10 +111,10 @@ sub build_timer_tick_cb {
     alias my $curve    = $self->curve;
     alias my $proxy    = $self->proxy;
     return sub {
-        my $elapsed = shift;
+        my ($elapsed, $delta, $is_reversed_dir) = @_;
         my $time    = $elapsed / $duration; # normalized elapsed between 0 and 1
         my $eased   = $easing->($time);
-        $eased      = 1 - $eased if $self->is_reversed_dir;
+        $eased      = 1 - $eased if $is_reversed_dir;
         my $value   = $curve->solve_curve($eased);
         $proxy->set_attribute_value($value);
     };

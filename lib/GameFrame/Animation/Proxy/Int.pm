@@ -8,7 +8,6 @@ extends 'GameFrame::Animation::Proxy';
 
 around set_attribute_value => sub {
     my ($orig, $self, $value) = @_;
-#    my $round = sprintf('%.0f', $value);
     my $round = int $value;
     $self->$orig($round);
 };

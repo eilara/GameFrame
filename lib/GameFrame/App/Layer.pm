@@ -8,8 +8,8 @@ has children => (is => 'rw', default => sub { [] });
 sub add_paintable {
     my ($self, $paintable) = @_;
     my $children = $self->children;
-    push @$children, $paintable;
-    weaken $children->[-1];
+    unshift @$children, $paintable;
+    weaken $children->[0];
 }
 
 sub paint {
