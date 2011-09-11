@@ -1,6 +1,7 @@
 package GameFrame::Animation::Curve::Sine;
 
 use Moose;
+use Scalar::Util qw(weaken);
 use Math::Trig;
 use Math::Vector::Real;
 
@@ -22,21 +23,25 @@ sub BUILD {
     $self->normal($normal);
 }
 
-sub curve_length {
+sub compute_curve_length {
     my $self = shift;
     my $delta = $self->to - $self->from;
     return 2*abs($delta); # upper limit on length
 }
 
-sub solve_edge_value { shift->solve_curve(pop) }
+sub solve_edge_value { shift->solve_curve_cb->(pop) }
 
-sub solve_curve {
-    my ($self, $elapsed) = @_;
-    my $from  = $self->from;
-    my $delta = $self->to - $from;
-	my $sine = sin($elapsed * $self->freq) * $self->amp;
-    my $value = $from + $elapsed * $delta + $sine * $self->normal;
-    return $value;
+sub _build_solve_curve_cb {
+    my $self = shift;
+    weaken $self;
+    return sub {
+        my $elapsed = shift;
+        my $from    = $self->from;
+        my $delta   = $self->to - $from;
+        my $sine    = sin($elapsed * $self->freq) * $self->amp;
+        my $value   = $from + $elapsed * $delta + $sine * $self->normal;
+        return $value;
+    };
 }
 
 1;

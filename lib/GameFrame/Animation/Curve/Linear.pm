@@ -1,6 +1,8 @@
 package GameFrame::Animation::Curve::Linear;
 
 use Moose;
+use Scalar::Util qw(weaken);
+use Data::Alias;
 
 extends 'GameFrame::Animation::Curve';
 
@@ -11,7 +13,7 @@ sub _build_from {
     return $self->get_init_value;
 }
 
-sub curve_length {
+sub compute_curve_length {
     my $self = shift;
     my $delta = $self->to - $self->from;
     return abs($delta);
@@ -23,12 +25,12 @@ sub solve_edge_value {
     return $self->$final;
 }
 
-sub solve_curve {
-    my ($self, $elapsed) = @_;
-    my $from  = $self->from;
-    my $delta = $self->to - $from;
-    my $value = $from + $elapsed * $delta;
-    return $value;
+sub _build_solve_curve_cb {
+    my $self = shift;
+    weaken $self;
+    alias my $from = $self->{from};
+    alias my $to   = $self->{to};
+    return sub { $from + shift() * ($to - $from) };
 }
 
 1;

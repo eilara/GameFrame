@@ -1,6 +1,7 @@
 package GameFrame::Animation::Curve::Spiral;
 
 use Moose;
+use Scalar::Util qw(weaken);
 use Math::Trig;
 use Math::Vector::Real;
 
@@ -11,17 +12,21 @@ has rotation_count => (is => 'ro', default => 1);
 
 extends 'GameFrame::Animation::Curve';
 
-sub curve_length {
+sub compute_curve_length {
     my $self = shift;
     return 2 * pi * $self->end_radius * $self->rotation_count; # upper limit
 }
 
-sub solve_curve {
-    my ($self, $elapsed) = @_;
-    my $angle  = $self->begin_angle + 2*pi * $self->rotation_count * $elapsed;
-    my $radius = $self->begin_radius + ($self->end_radius - $self->begin_radius) * $elapsed;
-    my $value  = $self->from + $radius * V(cos($angle), sin($angle));
-    return $value;
+sub _build_solve_curve_cb {
+    my $self = shift;
+    weaken $self;
+    return sub {
+        my $elapsed = shift;
+        my $angle  = $self->begin_angle + 2*pi * $self->rotation_count * $elapsed;
+        my $radius = $self->begin_radius + ($self->end_radius - $self->begin_radius) * $elapsed;
+        my $value  = $self->from + $radius * V(cos($angle), sin($angle));
+        return $value;
+    };
 }
 
 1;

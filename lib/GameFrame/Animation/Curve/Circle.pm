@@ -3,6 +3,7 @@ package GameFrame::Animation::Curve::Circle;
 # TODO make work in nD
 
 use Moose;
+use Scalar::Util qw(weaken);
 use Math::Trig;
 use Math::Vector::Real;
 
@@ -13,20 +14,24 @@ has end   => (is => 'ro', default => 2*pi);
 
 extends 'GameFrame::Animation::Curve';
 
-sub curve_length {
+sub compute_curve_length {
     my $self = shift;
     return 2 * pi * $self->radius; # upper limit
 }
 
-sub solve_curve {
-    my ($self, $elapsed) = @_;
-    my $begin = $self->begin;
-    my $end   = $self->end;
-    my $delta = $end - $begin;
-    my $angle = $begin + $delta * $elapsed;
-    my $from  = $self->from;
-    my $value = $from + $self->radius * V(cos($angle), sin($angle));
-    return $value;
+sub _build_solve_curve_cb {
+    my $self = shift;
+    weaken $self;
+    return sub {
+        my $elapsed = shift;
+        my $begin = $self->begin;
+        my $end   = $self->end;
+        my $delta = $end - $begin;
+        my $angle = $begin + $delta * $elapsed;
+        my $from  = $self->from;
+        my $value = $from + $self->radius * V(cos($angle), sin($angle));
+        return $value;
+    };
 }
 
 1;

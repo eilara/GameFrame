@@ -62,9 +62,11 @@ has duration     => (is => 'ro', isa => Num, lazy_build => 1);
 has curve_length => (is => 'ro', isa => Num, lazy_build => 1);
 has ease         => (is => 'ro', isa => Str, default => 'linear');
 
+has set_attribute_value_cb => (is => 'ro', lazy_build => 1);
+
 compose_from Proxy,
     has => {handles => [qw(
-        set_attribute_value
+        build_set_value_cb
         get_init_value
     )]};
 
@@ -74,11 +76,16 @@ compose_from Curve,
         my $self = shift;
         return (from => $self->from);
     },
-    has => {handles => {
-        solve_curve          => 'solve_curve',
-        solve_edge_value     => 'solve_edge_value',
-        compute_curve_length => 'curve_length',
-    }};
+    has => {handles => [qw(
+        solve_curve_cb
+        solve_edge_value
+        compute_curve_length
+    )]};
+
+sub _build_set_attribute_value_cb {
+    my $self = shift;
+    return $self->build_set_value_cb;
+}
 
 sub _build_duration {
     my $self = shift;
@@ -107,22 +114,23 @@ sub build_timer_tick_cb {
     weaken $self;
     my $ease           = $self->ease;
     my $easing         = $GameFrame::Animation::Easing::{$ease};
+    my $set_value      = $self->set_attribute_value_cb;
+    my $solve_curve    = $self->solve_curve_cb;
     alias my $duration = $self->{duration};
     alias my $curve    = $self->curve;
-    alias my $proxy    = $self->proxy;
     return sub {
         my ($elapsed, $delta, $is_reversed_dir) = @_;
         my $time    = $elapsed / $duration; # normalized elapsed between 0 and 1
         my $eased   = $easing->($time);
         $eased      = 1 - $eased if $is_reversed_dir;
-        my $value   = $curve->solve_curve($eased);
-        $proxy->set_attribute_value($value);
+        my $value   = $solve_curve->($eased);
+        $set_value->($value);
     };
 }
 
 sub cycle_complete {
     my $self = shift;
-    $self->set_attribute_value(
+    $self->set_attribute_value_cb->(
         $self->solve_edge_value(
             $self->is_reversed_dir? 0: 1
         )
