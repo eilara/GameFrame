@@ -2,7 +2,9 @@ package GameFrame::Animation::Proxy::Factory;
 
 use Moose;
 use aliased 'GameFrame::Animation::Proxy';
-use aliased 'GameFrame::Animation::Proxy::Int'    => 'IntProxy';
+use aliased 'GameFrame::Animation::Proxy::Int'            => 'IntProxy';
+use aliased 'GameFrame::Animation::Proxy::Position'       => 'PositionProxy';
+use aliased 'GameFrame::Animation::Proxy::SpritePosition' => 'SpritePositionProxy';
 use List::Util qw(first);
 
 sub find_proxy {
@@ -12,6 +14,11 @@ sub find_proxy {
     my $is_known_int   = first { $_ eq $att_name } qw(x y w h);
 
     return IntProxy if $is_known_int;
+    if ($att_name eq 'xy') {
+        return SpritePositionProxy
+            if $target->DOES('GameFrame::Role::Sprite');
+        return PositionProxy;
+    }
 
     my $att = $target->meta->find_attribute_by_name($att_name);
     return Proxy unless $att; # could be method or something

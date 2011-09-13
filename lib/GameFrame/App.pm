@@ -86,7 +86,7 @@ sub run {
     $c->run; # blocks
 }
 
-        my @times = map { 0 } 1..100;
+        my @times = map { 0 } 1..60;
         use EV; my $t = EV::time;
 sub sdl_paint_handler {
         my $new_t = EV::time;
@@ -95,7 +95,7 @@ sub sdl_paint_handler {
         shift @times;
         push @times, $dt;
         my $sum; $sum += $_ for @times;
-        my $avg = $sum / 100;
+        my $avg = $sum / 60;
         my $fps = 1 / $avg;
 
     my $self = shift;

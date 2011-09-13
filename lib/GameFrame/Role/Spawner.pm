@@ -42,10 +42,10 @@ sub current_wave {
     return $current_wave if @_ == 1;
     return if $current_wave >= $new_wave;
     for my $wave (1..($new_wave - $current_wave)) {
-        my $ideal_spawn_time =
-            $self->spawn_start_time + 
-            ($current_wave + $wave - 1) * 
-                $self->animation->duration / ($self->waves_to_spawn - 1);
+        my $passed = $self->waves_to_spawn == 1? 0:
+                ($current_wave + $wave - 1) * 
+                    $self->animation->duration / ($self->waves_to_spawn - 1);
+        my $ideal_spawn_time = $self->spawn_start_time + $passed;
         $self->create_next_child(start_time => $ideal_spawn_time);
     }
 }

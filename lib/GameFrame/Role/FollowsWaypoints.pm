@@ -31,7 +31,7 @@ sub follow_waypoints {
     my $t;
     for my $wp (@wps) {
         my $ani = $self->create_animation({
-            attribute => 'xy_vec',
+            attribute => 'xy',
             speed     => $self->speed,
             to        => V(@$wp),
         });

@@ -27,7 +27,6 @@ sub solve_edge_value {
 
 sub _build_solve_curve_cb {
     my $self = shift;
-    weaken $self;
     alias my $from = $self->{from};
     alias my $to   = $self->{to};
     return sub { $from + shift() * ($to - $from) };

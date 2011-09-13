@@ -107,14 +107,14 @@ GameFrame::eg::AnimatedCircle->new(
     ],
 );
 
-# animate 2D attributes, e.g. xy_vec
+# animate 2D attributes, e.g. xy
 # you could animate each property in 1D in parallel but this is more flexible
 # note you must specify the 'to' as vectors not arrays
 GameFrame::eg::AnimatedCircle->new(
     xy     => [520, 20],
     radius => 20,
     spec   => {
-        attribute => 'xy_vec',
+        attribute => 'xy',
         duration  => 2,
         to        => V(620, 80),
         bounce    => 1,
@@ -150,7 +150,7 @@ GameFrame::eg::AnimatedCircle->new(
     },
 );
 
-# xy_vec property is a 2D vector
+# xyproperty is a 2D vector
 # you can set 'curve' on the animation to animate the xy
 # on some trajectory
 # here the circle is moved in the same linear path as 
@@ -161,7 +161,7 @@ GameFrame::eg::AnimatedCircle->new(
     xy     => [10, 300],
     radius => 10,
     spec   => {
-        attribute  => 'xy_vec',
+        attribute  => 'xy',
         duration   => 2,
         to         => V(630, 300),
         bounce     => 1,
@@ -178,7 +178,7 @@ GameFrame::eg::AnimatedCircle->new(
     xy     => [60, 420],
     radius => 10,
     spec   => {
-        attribute  => 'xy_vec',
+        attribute  => 'xy',
         duration   => 4,
         bounce     => 1,
         forever    => 1,
@@ -193,7 +193,7 @@ GameFrame::eg::AnimatedCircle->new(
     xy     => [180, 415],
     radius => 5,
     spec   => {
-        attribute  => 'xy_vec',
+        attribute  => 'xy',
         duration   => 4,
         bounce     => 1,
         forever    => 1,
