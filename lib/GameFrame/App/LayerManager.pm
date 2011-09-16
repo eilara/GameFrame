@@ -37,10 +37,10 @@ sub add_paintable_to_layer {
 }
 
 sub paint {
-    my $self   = shift;
+    my ($self, $surface) = @_;
     my $layers = $self->layer_map;
     my $names  = $self->layers;
-    $layers->{$_}->paint for @$names;
+    $layers->{$_}->paint($surface) for @$names;
 }
 
 1;

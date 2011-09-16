@@ -99,12 +99,13 @@ sub sdl_paint_handler {
         my $fps = 1 / $avg;
 
     my $self = shift;
+    my $surface = $self->sdl;
     my $c = $self->bg_color;
-    $self->sdl->draw_rect(undef, $c) if defined $c;
+    $surface->draw_rect(undef, $c) if defined $c;
 
-        $self->sdl->draw_gfx_text([10, 10], 0xFFFF00FF, sprintf("%.2f", $fps));
+        $surface->draw_gfx_text([10, 10], 0xFFFF00FF, sprintf("%.2f", $fps));
 
-    $self->paint;
+    $self->paint($surface);
     $self->update;
 }
 

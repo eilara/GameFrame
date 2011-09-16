@@ -67,6 +67,8 @@ sub set_to {
 }
 
 # returns by how many pixels per second did we slow
+# so that spell casters can take away the spell
+# TODO there really should a buff/curse class
 sub slow {
     my ($self, $percent) = @_;
     my $speed = $self->speed;

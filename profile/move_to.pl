@@ -96,7 +96,7 @@ my $iut    = GameFrame::profile::Movable->new(
     ],
 );
 
-$iut->move_to([100000, 0]);
+$iut->move_to([1000000, 0]);
 
 my $timer = $clock->timer;
 my $i;

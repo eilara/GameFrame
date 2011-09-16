@@ -64,9 +64,9 @@ sub hide { shift->is_visible(0) }
 sub _build_surface { $SDL_Main_Surface }
 
 sub sdl_paint {
-    my $self = shift;
+    my ($self, $surface) = @_;
     return unless $self->{is_visible};
-    $self->paint;
+    $self->paint($surface);
 }
 
 # permonks stvn trick to get BUILD time action from roles

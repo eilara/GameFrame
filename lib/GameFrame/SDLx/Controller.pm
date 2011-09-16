@@ -12,6 +12,8 @@ use SDLx::FPS;
 use SDL::Event;
 use SDL::Events;
 
+use GameFrame::Animation::Clock;
+
 my $FPS = 62;
 
 has [qw(paint_cb event_cb)] => (is => 'rw');

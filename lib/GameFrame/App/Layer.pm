@@ -13,12 +13,12 @@ sub add_paintable {
 }
 
 sub paint {
-    my $self = shift;
+    my ($self, $surface) = @_;
     my $children = $self->children;
     my $are_dead;
     # we need to clean dead weak refs
     for my $child (@$children) {
-        if ($child)        { $child->paint }
+        if ($child)        { $child->sdl_paint($surface) }
         elsif (!$are_dead) { $are_dead = 1 }
     }
     if ($are_dead) {

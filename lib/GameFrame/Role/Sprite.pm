@@ -50,8 +50,8 @@ around xy_trigger => sub {
 };
 
 sub paint {
-    my $self = shift;
-    $self->draw($self->surface);
+    my ($self, $surface) = @_;
+    $self->draw($surface);
 }
 
 1;

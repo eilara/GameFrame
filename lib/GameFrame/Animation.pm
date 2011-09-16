@@ -57,8 +57,8 @@ use GameFrame::Animation::Easing;
 extends 'GameFrame::Animation::Base';
 
 has from         => (is => 'ro', lazy_build => 1);
-has speed        => (is => 'ro', isa => Num, lazy_build => 1);
-has duration     => (is => 'ro', isa => Num, lazy_build => 1);
+has speed        => (is => 'rw', isa => Num, lazy_build => 1);
+has duration     => (is => 'rw', isa => Num, lazy_build => 1);
 has curve_length => (is => 'ro', isa => Num, lazy_build => 1);
 has ease         => (is => 'ro', isa => Str, default => 'linear');
 
@@ -137,10 +137,27 @@ sub cycle_complete {
     );
 }
 
+# when changing speed we set new start time for the timer and reset duration
+sub change_speed {
+    my ($self, $speed) = @_;
+    my $t              = $self->timeline;
+    my $old_speed      = $self->speed;
+    my $old_duration   = $self->duration;
+    my $duration       = $old_duration * $old_speed / $speed;
+    my $start_time     = $t->cycle_start_time + $t->total_sleep_computed
+                       - $t->total_sleep_computed * $duration / $old_duration;
+
+    $t->total_sleep_computed($t->total_sleep_computed *$old_speed/$speed);
+    $t->cycle_start_time($start_time);
+    $self->duration($duration);
+    $self->speed($speed);
+    $t->cycle_limit($self->_build_cycle_limit);
+}
+
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
 
-    die unless $args{duration} || $args{speed};
+    die "speed=$args{speed} " unless $args{duration} || $args{speed};
 
     # fix from_to
     if (my $from_to = delete($args{from_to})) {

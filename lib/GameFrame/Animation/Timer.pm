@@ -44,7 +44,7 @@ has provider => (is => 'ro', required => 1, weak_ref => 1, handles => {
 
 has cycle_limit => (
     traits   => ['Code'],
-    is       => 'ro',
+    is       => 'rw',
     isa      => 'CodeRef',
     required => 1,
     handles => {is_cycle_complete => 'execute'},
@@ -115,9 +115,9 @@ sub BUILD {
     alias my $cycle_start_time     = $self->{cycle_start_time};
     alias my $total_cycle_pause    = $self->{total_cycle_pause};
     alias my $is_reversed_dir      = $self->{is_reversed_dir};
+    alias my $cycle_limit          = $self->{cycle_limit};
 
     my $clock = $self->clock;
-    my $limit = $self->cycle_limit;
     my $cb    = $self->provider_tick_cb;
     weaken $self;
     $self->timer_tick_cb(sub{
@@ -128,7 +128,7 @@ sub BUILD {
         $total_sleep_computed = $elapsed;
 
         # successful completion of the animation cycle
-        if (my $ideal_cycle_duration = $limit->($elapsed, $delta)) {
+        if (my $ideal_cycle_duration = $cycle_limit->($elapsed, $delta)) {
             $self->_stop($ideal_cycle_duration);
             $self->cycle_complete;
             $self->_on_final_timer_tick;
@@ -178,6 +178,8 @@ sub _stop {
     my ($self, $ideal_cycle_duration) = @_;
     # remember the last cycle start time in case we want to restart
     # and avoid timer drift
+# TODO total_sleep_computed should take into account time overshoot
+#      which cycle limit could provide
     $self->last_cycle_complete_time(
         $self->cycle_start_time +
         ($ideal_cycle_duration || $self->total_sleep_computed) +

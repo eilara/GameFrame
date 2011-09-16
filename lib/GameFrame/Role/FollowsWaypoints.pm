@@ -14,7 +14,9 @@ has waypoints => (
 
 has start_time => (is => 'ro');
 
-has speed => (is => 'ro');
+has animation => (is => 'rw');
+
+has speed => (is => 'ro', reader => 'get_speed', required => 1);
 
 with 'GameFrame::Role::Animated';
 
@@ -23,6 +25,16 @@ around BUILDARGS => sub {
     $args{xy_vec} = V(@{ $args{waypoints}->points_px->[0] });
     return $class->$orig(%args);
 };
+
+sub speed {
+    my $self = shift;
+    return $self->{speed} if @_ == 0;
+    my $speed = shift;
+    $speed = $speed < 0.01? 0.01: $speed;
+    return unless $self->animation;
+    $self->{speed} = $speed;
+    $self->animation->change_speed($speed);
+}
 
 sub follow_waypoints {
     my $self = shift;
@@ -35,6 +47,7 @@ sub follow_waypoints {
             speed     => $self->speed,
             to        => V(@$wp),
         });
+        $self->animation($ani);
         $t = $ani->start_animation_and_wait($t || $self->start_time || ());
     }
 }
