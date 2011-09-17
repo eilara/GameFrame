@@ -39,6 +39,12 @@ sub sdl_event {
 
     } elsif ($e->type == SDL_MOUSEBUTTONDOWN) {
         $self->on_mouse_button_down($e->motion_x, $e->motion_y);
+        my $button = $e->button_button;
+        if ($button == SDL_BUTTON_LEFT) {
+            $self->on_left_mouse_button_down($e->motion_x, $e->motion_y);
+        } elsif ($button == SDL_BUTTON_RIGHT) {
+            $self->on_right_mouse_button_down($e->motion_x, $e->motion_y);
+        }
 
     } elsif ($e->type == SDL_MOUSEMOTION) {
         $self->on_mouse_motion($e->motion_x, $e->motion_y);

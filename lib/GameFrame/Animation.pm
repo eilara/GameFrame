@@ -138,6 +138,7 @@ sub cycle_complete {
 }
 
 # when changing speed we set new start time for the timer and reset duration
+# TODO: closure optimization?
 sub change_speed {
     my ($self, $speed) = @_;
     my $t              = $self->timeline;
@@ -157,7 +158,7 @@ sub change_speed {
 around BUILDARGS => sub {
     my ($orig, $class, %args) = @_;
 
-    die "speed=$args{speed} " unless $args{duration} || $args{speed};
+    die unless $args{duration} || $args{speed};
 
     # fix from_to
     if (my $from_to = delete($args{from_to})) {

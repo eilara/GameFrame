@@ -1,6 +1,6 @@
-package GameFrame::Grid;
+package GameFrame::Grid::Layer;
 
-# the grid:
+# the grid layer:
 #    * handles finding cells by xy
 #    * keeps the grid cells and lets you set/clear/query the cell contents
 

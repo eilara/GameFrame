@@ -43,7 +43,7 @@ use warnings;
 use FindBin qw($Bin);
 use aliased 'GameFrame::App';
 use aliased 'GameFrame::Grid::Markers';
-use aliased 'GameFrame::Grid';
+use aliased 'GameFrame::Grid::Layer' => 'GridLayer';
 
 my $app = App->new(
     title       => 'Grid',
@@ -63,7 +63,7 @@ my $mole = GameFrame::eg::GridMole->new(
     markers  => $markers,
 );
 
-my $grid = Grid->new(
+my $grid = GridLayer->new(
     markers    => $markers,
     init_cells => [[0, 0, $mole]],
 );
