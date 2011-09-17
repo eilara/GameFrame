@@ -2,7 +2,7 @@
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
-# how to use the grid to check/query cells for grid-based games
+# how to use a grid layer to check/query cells for grid-based games
 # click on the mole to have it disappear and reappear in random cell
 
 package GameFrame::eg::GridMole;

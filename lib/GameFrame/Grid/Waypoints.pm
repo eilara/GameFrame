@@ -55,6 +55,21 @@ has cached_path_rects => ( # [[x,y,w,h], color] rects of path cells
 
 with 'GameFrame::Role::Paintable';
 
+around BUILDARGS => sub {
+    my ($orig, $class, %args) = @_;
+
+    if (my $file = delete $args{map_file}) {
+        open my $fh, $file or die "Can't read map file $file: $!";
+        my $data = join '', <$fh>;
+        close $fh;
+        $args{waypoints} = $data;
+    }
+
+    return $class->$orig(%args);
+};
+
+
+
 sub _build_waypoint_cells {
     my $self = shift;
     my %cells;
