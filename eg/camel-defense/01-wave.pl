@@ -50,9 +50,9 @@ use aliased 'GameFrame::CamelDefense::Creep';
 use aliased 'GameFrame::CamelDefense::Wave';
 
 my $app = App->new(
-    title       => 'Grid',
-    bg_color    => 0x0,
-    resources   => "$Bin/resources",
+    title     => 'Grid',
+    bg_color  => 0x0,
+    resources => "$Bin/resources",
 
     layer_manager_args => [layers => [qw(path creeps)]],
 );
@@ -71,7 +71,7 @@ my $waypoints = Waypoints->new(
 
 my $wave = Wave->new(
     duration   => 10,
-    waves      => 50,
+    waves      => 3,
     child_args => {
         child_class => Creep,
         size        => [21, 21],
@@ -91,6 +91,7 @@ my $wave = Wave->new(
         },
     },
 );
+
 my $controller = GameFrame::eg::CamelDefense::SpeedController->new(
     layer   => 'creeps',
     spawner => $wave,

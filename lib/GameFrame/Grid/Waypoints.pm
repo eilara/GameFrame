@@ -68,8 +68,6 @@ around BUILDARGS => sub {
     return $class->$orig(%args);
 };
 
-
-
 sub _build_waypoint_cells {
     my $self = shift;
     my %cells;
