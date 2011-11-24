@@ -7,6 +7,7 @@ use EV;
 my $Timer;
 my $Callbacks = Set::Object->new;
 
+# used by controller
 sub get_update_cb {
     return sub {
         my $t = EV::time;
@@ -41,7 +42,7 @@ sub stop {
 
 sub is_active {
     my $self = shift;
-    return $self->cbs->contains($self->cb);        
+    return $self->cbs->contains($self->cb);
 }
 
 1;

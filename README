@@ -1,6 +1,6 @@
 experiments in Perl + SDL + Coro 2D game programming
 
-NOTE: in major refactoring, currently only eg 1-10 work
+NOTE: in major refactoring
 
 requires:
 
@@ -14,8 +14,8 @@ List::MoreUtils
 MooseX::Role::Listenable
 MooseX::Role::BuildInstanceOf
 EV
-SDLx::Controller::Coro
 Math::Vector::Real
+SDLx::Tween
 
 
 

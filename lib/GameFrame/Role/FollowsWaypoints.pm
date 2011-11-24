@@ -50,6 +50,7 @@ sub follow_waypoints {
         $self->animation($ani);
         $t = $ani->start_animation_and_wait($t || $self->start_time || ());
     }
+    return $t;
 }
 
 1;

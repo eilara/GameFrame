@@ -42,13 +42,7 @@ has provider => (is => 'ro', required => 1, weak_ref => 1, handles => {
     cycle_complete       => 'cycle_complete',
 });
 
-has cycle_limit => (
-    traits   => ['Code'],
-    is       => 'rw',
-    isa      => 'CodeRef',
-    required => 1,
-    handles => {is_cycle_complete => 'execute'},
-);
+has cycle_limit => (is => 'rw', required => 1);
 
 # provide a virtual clock for testing, or a shared clock for playing
 # with elastic time (TODO)
@@ -62,11 +56,7 @@ has timer => (is => 'ro', lazy_build => 1, handles => {
     is_timer_active => 'is_active',
 });
 
-has is_reversed_dir  => (
-    is      => 'rw',
-    isa     => 'Bool',
-    default => 0,
-);
+has is_reversed_dir  => (is => 'rw', default => 0);
 
 # when did current cycle start
 has cycle_start_time => (is => 'rw', default => 0);

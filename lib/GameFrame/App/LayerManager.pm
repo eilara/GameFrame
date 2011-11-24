@@ -12,7 +12,7 @@ has layers => (
     default  => sub { [] },
 );
 
-# map of layer name -> layer listenable
+# map of layer name -> layer
 has layer_map => (
     is         => 'ro',
     lazy_build => 1,

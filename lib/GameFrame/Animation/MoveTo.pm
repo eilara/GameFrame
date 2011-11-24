@@ -49,9 +49,6 @@ sub _build_cycle_limit {
 
         $target->xy($new);
 
-        my $reached = $dist <= 1;
-        return $elapsed if $reached;
-
         # maybe we passed the target
         my $new_dir_vec = [$to->[0] - $new->[0], $to->[1] - $new->[1]];
         my ($x0, $y0, $x1, $y1) = (@$dir_vec, @$new_dir_vec);
